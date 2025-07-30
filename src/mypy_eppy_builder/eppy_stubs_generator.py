@@ -105,4 +105,4 @@ if __name__ == "__main__":
 
     generator = EppyStubGenerator(idd_file, stubs_output_dir)
     generator.generate_stubs()
-    generate_overloads(stubs_output_dir, "./typings/archetypal/idfclass/idf.pyi")
+    # generate_overloads(stubs_output_dir, "./typings/archetypal/idfclass/idf.pyi")
