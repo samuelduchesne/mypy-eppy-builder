@@ -23,11 +23,6 @@ setup(
     author="Samuel Letellier-Duchesne",
     author_email="samuelduchesne@me.com",
     description="{{ package.description }}",
-    classifiers=[
-        {% for classifier in package.get_classifiers() -%}
-            {{ "\n        " -}}"{{ classifier -}}"{{ '' if loop.last else ',' }}
-        {%- endfor %}
-    ],
     keywords='{{ package.library_name }} {{ package.library_name }}-stubs type-annotations typeshed autocomplete',
     long_description=LONG_DESCRIPTION,
     long_description_content_type="text/markdown",
@@ -42,7 +37,6 @@ setup(
     },
     python_requires='>={{ package.min_python_version }}',
     project_urls={
-        'Documentation': '{{ package.get_local_doc_link() }}',
         'Source': '{{ builder_repo_url }}',
         'Tracker': '{{ builder_repo_url }}/issues',
     },
