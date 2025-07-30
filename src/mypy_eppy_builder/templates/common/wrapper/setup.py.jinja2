@@ -1,5 +1,5 @@
 """
-Setup script for {{ package.pypi_name }}.
+Setup script for {{ package.data.pypi_name }}.
 
 {{ copyright }}
 """
@@ -11,7 +11,7 @@ from setuptools import setup  # type: ignore
 LONG_DESCRIPTION = (Path(__file__).parent / "README.md").read_text()
 
 setup(
-    name="{{ package.pypi_name }}",
+    name="{{ package.data.pypi_name }}",
     version="{{ package.version }}",
     packages=[
         {% for package_name in package.setup_package_data -%}
