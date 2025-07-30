@@ -1,0 +1,52 @@
+site_name: mypy-eppy-builder
+repo_url: https://github.com/samuelduchesne/mypy-eppy-builder
+site_url: https://samuelduchesne.github.io/mypy-eppy-builder
+site_description: Automated type stubs for Eppy, enabling static type checking and IDE autocompletion.
+site_author: Samuel Letellier-Duchesne
+edit_uri: edit/main/docs/
+repo_name: samuelduchesne/mypy-eppy-builder
+copyright: Maintained by <a href="https://samuelduchesne.com">samuelduchesne</a>.
+
+nav:
+  - Home: index.md
+  - Modules: modules.md
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: ["src/mypy_eppy_builder"]
+theme:
+  name: material
+  feature:
+    tabs: true
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: white
+      accent: deep orange
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: deep orange
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/samuelduchesne/mypy-eppy-builder
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/mypy-eppy-builder
+
+markdown_extensions:
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
