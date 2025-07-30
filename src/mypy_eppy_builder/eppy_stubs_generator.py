@@ -2,15 +2,23 @@ import os
 import re
 from pathlib import Path
 
-from archetypal import IDF
+from archetypal.idfclass import IDF
+from jinja2 import Environment, FileSystemLoader
+
+TEMPLATE_DIR = Path(__file__).parent / "templates"
 
 
 # --- Utility to parse IDD definitions and generate stubs ---
 class EppyStubGenerator:
-    def __init__(self, idd_path: str, output_dir: str):
+    def __init__(self, idd_path: str, output_dir: str, template_dir: str = str(TEMPLATE_DIR)):
         self.idd_path = idd_path
         self.output_dir = output_dir
         self.idf = IDF()
+        self.env = Environment(  # noqa: S701
+            loader=FileSystemLoader(template_dir),
+            trim_blocks=False,
+            lstrip_blocks=False,
+        )
 
     def normalize_classname(self, obj_name: str) -> str:
         return re.sub(r"[^a-zA-Z0-9]", "_", obj_name.title())
@@ -30,62 +38,38 @@ class EppyStubGenerator:
         else:
             return "str"
 
-    def generate_stub_content(self, obj: dict, fields: list[dict[str, list[str]]]) -> str:
+    def render_class_stub(self, obj: dict, fields: list[dict[str, list[str]]]) -> str:
         classname = self.normalize_classname(obj["idfobj"])
         class_memo = obj.get("memo", [""])[0]
-        lines = [f"class {classname}(EpBunch):"]
-        if class_memo:
-            # Ensure the memo ends with a punctuation mark.
-            memo = class_memo.rstrip()
-            if memo and memo[-1] not in ".!?":
-                memo += "."
-            lines.append(f'    """{memo}"""\n')
-        if not fields:
-            lines.append("    pass")
-            return "\n".join(lines)
-
+        stub_fields = []
         for field in fields:
             field_name = self.normalize_classname(field["field"][0])
             field_type = self.get_field_type(field)
             field_note = field.get("note", [""])[0]
             field_default = field.get("default", [""])[0]
-            if field_default:
-                if field_type == "str":
-                    lines.append(f'    {field_name}: {field_type} = "{field_default}"')
-                else:
-                    lines.append(f"    {field_name}: {field_type} = {field_default}")
-            else:
-                lines.append(f"    {field_name}: {field_type}")
-            if field_note:
-                lines.append(f'    """{field_note}"""')
-
-        return "\n".join(lines)
+            stub_fields.append({
+                "name": field_name,
+                "type": field_type,
+                "note": field_note,
+                "default": field_default,
+            })
+        template = self.env.get_template("common/class_stub.pyi.jinja2")
+        return template.render(
+            classname=classname,
+            class_memo=class_memo,
+            fields=stub_fields,
+        )
 
     def generate_stubs(self):
         os.makedirs(self.output_dir, exist_ok=True)
         idd_info: list[list[dict]] = self.idf.idd_info
 
         for obj, *fields in idd_info[1:]:
-            stub_content = self.generate_stub_content(obj, fields)
+            stub_content = self.render_class_stub(obj, fields)
             file_name = f"{self.normalize_classname(obj['idfobj'])}.pyi"
-
             with open(os.path.join(self.output_dir, file_name), "w") as stub_file:
-                stub_file.write("from typing import Literal\n\n")
-                stub_file.write("from geomeppy.patches import EpBunch\n\n")
                 stub_file.write(stub_content)
-
         print(f"Stubs generated successfully in {self.output_dir}")
-
-
-HEADER = """from typing import overload, Literal
-
-from geomeppy.patches import EpBunch
-
-"""
-
-FOOTER = """
-class IDF:
-"""
 
 
 def classname_to_key(classname: str) -> str:
@@ -93,38 +77,24 @@ def classname_to_key(classname: str) -> str:
     return ":".join(part.upper() for part in parts)
 
 
-def generate_overloads(stubs_dir: str, output_file: str):
-    imports = []
-    overloads = []
-
-    Path(output_file).parent.mkdir(parents=True, exist_ok=True)
+def generate_overloads(stubs_dir: str, output_file: str, template_dir: str = TEMPLATE_DIR):
+    env = Environment(
+        autoescape=True,
+        loader=FileSystemLoader(template_dir),
+        trim_blocks=True,
+        lstrip_blocks=True,
+    )
+    classnames = []
     for file in os.listdir(stubs_dir):
         if file.endswith(".pyi"):
-            classname = file[:-4]  # remove .pyi extension
-            module_import = f"from eppy.{classname} import {classname}"
-            imports.append(module_import)
-
-            ep_key = classname_to_key(classname)
-            overload = f'''
-    @overload
-    def newidfobject(self, key: Literal["{ep_key}"], **kwargs) -> {classname}: ...
-
-    @overload
-    def idfobjects(self, key: Literal["{ep_key}"]) -> list[{classname}]: ...
-'''
-            overloads.append(overload)
-
+            classname = file[:-4]
+            classnames.append(classname)
+    overloads = [{"classname": classname, "key": classname_to_key(classname)} for classname in classnames]
+    template = env.get_template("common/idf.pyi.jinja2")
+    rendered = template.render(classnames=classnames, overloads=overloads)
+    Path(output_file).parent.mkdir(parents=True, exist_ok=True)
     with open(output_file, "w") as f:
-        f.write(HEADER)
-        f.write("\n".join(imports))
-        f.write(FOOTER)
-        f.write("".join(overloads))
-
-        # default definitions
-        f.write("""
-    def newidfobject(self, key: str, **kwargs) -> EpBunch: ...
-    def idfobjects(self, key: str) -> list[EpBunch]: ...
-""")
+        f.write(rendered)
 
 
 # --- Main usage example ---

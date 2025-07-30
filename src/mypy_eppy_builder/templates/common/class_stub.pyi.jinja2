@@ -1,0 +1,20 @@
+from typing import Literal
+
+from geomeppy.patches import EpBunch
+
+class {{ classname }}(EpBunch):
+    {%- if class_memo %}
+    """{{ class_memo.strip() }}"""
+    {%- endif %}
+
+    {%- if fields %}
+    {%- for field in fields %}
+
+    {{ field.name }}: {{ field.type }}{%- if field.default not in [none, ''] %} = {% if field.type == 'str' or field.type.startswith('Literal') %}"{{ field.default }}"{%- else -%}{{ field.default }}{%- endif -%}{% endif %}
+    {%- if field.note %}
+    """{{ field.note.strip() }}"""
+    {%- endif %}
+    {%- endfor %}
+    {%- else %}
+    pass
+    {%- endif %}

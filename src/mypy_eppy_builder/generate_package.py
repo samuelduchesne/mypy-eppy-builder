@@ -84,7 +84,7 @@ def main():
                 "docs": "https://types-archetypal.readthedocs.io/",
             },
             "data": {
-                "pypi_name": "types-archetypal",
+                "pypi_name": "archetypal-stubs",
                 "pypi_stubs_name": "types_eppy_eplusV231",
             },
         },

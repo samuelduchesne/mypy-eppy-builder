@@ -1,0 +1,24 @@
+from typing import Literal, TypedDict, overload
+
+from geomeppy.patches import EpBunch
+
+{% for classname in classnames %}
+from eppy.{{ classname }} import {{ classname }}
+{% endfor %}
+
+IDFObjectsDict = TypedDict('IDFObjectsDict', {
+{%- for overload in overloads %}
+    '{{ overload.key }}': list[{{ overload.classname }}],
+{%- endfor %}
+})
+
+class IDF:
+{%- for overload in overloads %}
+
+    @overload
+    def newidfobject(self, key: Literal["{{ overload.key }}"], **kwargs) -> {{ overload.classname }}: ...
+{%- endfor %}
+
+    def newidfobject(self, key: str, **kwargs) -> EpBunch: ...
+    @property
+    def idfobjects(self) -> IDFObjectsDict: ...
