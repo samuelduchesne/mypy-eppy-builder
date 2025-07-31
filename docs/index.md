@@ -7,6 +7,11 @@
 
 Automated type stubs for Eppy, enabling static type checking and IDE autocompletion.
 
+Numeric fields in the IDD may specify limits using `\minimum`, `\minimum>`, `\maximum`,
+and `\maximum<`. These bounds are translated into `Annotated` type hints with
+`pydantic.Field` metadata. When defaults are present, they appear in the generated
+stub as `Field(default=..., ge=..., le=...)` alongside the annotation.
+
 ## Generating stub packages
 
 Use `generate_package.py` to build stubs for a specific EnergyPlus version. Pass

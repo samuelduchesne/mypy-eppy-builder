@@ -6,7 +6,6 @@ jinja2 = pytest.importorskip("jinja2")
 Environment = jinja2.Environment
 FileSystemLoader = jinja2.FileSystemLoader
 
-
 def test_pyproject_keywords(tmp_path: Path) -> None:
     templates_dir = Path("src/mypy_eppy_builder/templates")
     env = Environment(
