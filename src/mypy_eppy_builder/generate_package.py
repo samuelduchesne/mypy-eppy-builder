@@ -68,6 +68,9 @@ def main() -> None:
 
     version_digits = "".join(ch for ch in eplus_version if ch.isdigit())
     package_slug = f"types_eppy_eplusV{version_digits}"
+    version_slug = f"eplus{eplus_version.replace('.', '_')}"
+    version_classname = f"IDF_{eplus_version.replace('.', '_')}"
+    extras = [{"name": version_slug, "package": package_slug}]
 
     idd_file = (
         args.idd_file
@@ -99,6 +102,7 @@ def main() -> None:
         package_ctx = {
             "epbunch_path": "geomeppy.patches",
             "package_slug": package_slug,
+            "extras": extras,
             "min_python_version": "3.9",
             "library_name": "archetypal",
             "library_version": eplus_version,
@@ -123,6 +127,7 @@ def main() -> None:
         package_ctx = {
             "epbunch_path": "geomeppy.patches",
             "package_slug": package_slug,
+            "extras": extras,
             "min_python_version": "3.9",
             "library_name": "eppy",
             "library_version": eplus_version,
@@ -152,6 +157,8 @@ def main() -> None:
         "stubs_output_dir": str(stubs_output_dir),
         "builder_package_name": "mypy_eppy_builder",
         "builder_version": get_version(),
+        "eplus_version": eplus_version,
+        "version_classname": version_classname,
     }
     render_templates(template_files, context)
 

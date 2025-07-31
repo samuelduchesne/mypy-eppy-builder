@@ -74,6 +74,15 @@ environment variable or searches the default EnergyPlus location. Use
 `--package-type archetypal` to generate the corresponding archetypal
 stubs.
 
+For pre-built packages from PyPI install the wrapper with an extra matching
+your EnergyPlus version, for example:
+
+```bash
+pip install "archetypal-stubs[eplus23_1]"
+```
+
+Ensure the stub version matches the EnergyPlus files you work with.
+
 To finalize the set-up for publishing to PyPI, see [here](https://fpgmaas.github.io/cookiecutter-uv/features/publishing/#set-up-for-pypi).
 For activating the automatic documentation with MkDocs, see [here](https://fpgmaas.github.io/cookiecutter-uv/features/mkdocs/#enabling-the-documentation-on-github).
 To enable the code coverage reports, see [here](https://fpgmaas.github.io/cookiecutter-uv/features/codecov/).

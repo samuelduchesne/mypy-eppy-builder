@@ -14,6 +14,13 @@ classifiers = [
 keywords = ["{{ package.library_name }}", "typing", "stubs"]
 dependencies = []
 
+{% if package.extras %}
+[project.optional-dependencies]
+{% for extra in package.extras %}
+{{ extra.name }} = ["{{ extra.package }}"]
+{% endfor %}
+{% endif %}
+
 [build-system]
 requires = ["uv_build>=0.8.4,<0.9.0"]
 build-backend = "uv_build"

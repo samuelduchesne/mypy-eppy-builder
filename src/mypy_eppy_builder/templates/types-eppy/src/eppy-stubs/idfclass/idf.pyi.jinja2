@@ -8,6 +8,13 @@ from {{ package.data.pypi_stubs_name }}.{{ classname }} import {{ classname }}
 {% endfor %}
 
 class IDF:
+{% if version_classname %}
+    @overload
+    def __init__(self: {{ version_classname }}, *, as_version: Literal["{{ eplus_version }}"], **kwargs) -> None: ...
+    @overload
+    def __init__(self: {{ version_classname }}, *, file_version: Literal["{{ eplus_version }}"], **kwargs) -> None: ...
+{% endif %}
+    def __init__(self, *args, **kwargs) -> None: ...
 {% for classname, ep_key in overloads %}
     @overload
     def newidfobject(self, key: Literal["{{ ep_key }}"], **kwargs) -> {{ classname }}: ...
@@ -27,3 +34,9 @@ class IDF:
     def getobject(self, key: str, name: str) -> EpBunch: ...
     def copyidfobject(self, idfobject: EpBunch) -> EpBunch: ...
     def removeextensibles(self, key: str, name: str) -> EpBunch: ...
+
+{% if version_classname %}
+class {{ version_classname }}(IDF):
+    pass
+{% endif %}
+
