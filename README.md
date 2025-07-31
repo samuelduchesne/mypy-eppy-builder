@@ -56,6 +56,24 @@ git push origin main
 You are now ready to start development on your project!
 The CI/CD pipeline will be triggered when you open a pull request, merge to main, or when you create a new release.
 
+### Generating stub packages
+
+The `generate_package.py` script builds the `eppy-stubs` or
+`archetypal-stubs` packages. Provide the EnergyPlus version and IDD file
+to target:
+
+```bash
+uv run python src/mypy_eppy_builder/generate_package.py \
+    --version 23.1 \
+    --idd-file /path/to/Energy+.idd \
+    --package-type eppy
+```
+
+If `--idd-file` is omitted, the script uses the `EPPY_IDD_FILE`
+environment variable or searches the default EnergyPlus location. Use
+`--package-type archetypal` to generate the corresponding archetypal
+stubs.
+
 To finalize the set-up for publishing to PyPI, see [here](https://fpgmaas.github.io/cookiecutter-uv/features/publishing/#set-up-for-pypi).
 For activating the automatic documentation with MkDocs, see [here](https://fpgmaas.github.io/cookiecutter-uv/features/mkdocs/#enabling-the-documentation-on-github).
 To enable the code coverage reports, see [here](https://fpgmaas.github.io/cookiecutter-uv/features/codecov/).
@@ -66,6 +84,10 @@ To enable the code coverage reports, see [here](https://fpgmaas.github.io/cookie
 - Add the API Token to your projects secrets with the name `PYPI_TOKEN` by visiting [this page](https://github.com/samuelduchesne/mypy-eppy-builder/settings/secrets/actions/new).
 - Create a [new release](https://github.com/samuelduchesne/mypy-eppy-builder/releases/new) on Github.
 - Create a new tag in the form `*.*.*`.
+
+When a release is published, the CI workflow packages the generated
+stubs for each supported EnergyPlus version and uploads the resulting
+`eppy-stubs` and `archetypal-stubs` distributions to PyPI.
 
 For more details, see [here](https://fpgmaas.github.io/cookiecutter-uv/features/cicd/#how-to-trigger-a-release).
 
