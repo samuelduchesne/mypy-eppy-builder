@@ -24,6 +24,9 @@ uv run python src/mypy_eppy_builder/generate_package.py \
     --package-type eppy
 ```
 
+A directory `generated_package/` will contain separate stub packages for each
+specified EnergyPlus version.
+
 If the `--idd-file` argument is omitted, the script reads the `EPPY_IDD_FILE`
 environment variable or falls back to the default EnergyPlus installation
 location. Use `--package-type archetypal` to generate the

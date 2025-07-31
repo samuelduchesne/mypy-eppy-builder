@@ -23,14 +23,23 @@ env = Environment(
 )
 
 
-def render_templates(template_files: list[Path], context: dict | None = None) -> None:
+def render_templates(
+    template_files: list[Path],
+    context: dict | None = None,
+    *,
+    output_base: Path = OUTPUT_DIR,
+    template_base: Path = TEMPLATES_DIR,
+) -> None:
+    """Render Jinja templates to ``output_base`` preserving relative layout."""
+
     context = context or {}
     for template_path in template_files:
-        template = env.get_template(str(template_path.relative_to(TEMPLATES_DIR)))
+        template = env.get_template(str(template_path.relative_to(template_base)))
         output_content = cast(str, template.render(**context))
         # Remove .jinja2 extension for output
-        output_rel_path = str(template_path).replace(".jinja2", "")
-        output_path = OUTPUT_DIR / Path(output_rel_path).relative_to(TEMPLATES_DIR)
+        rel_path = template_path.relative_to(template_base)
+        output_rel_path = str(rel_path).replace(".jinja2", "")
+        output_path = output_base / output_rel_path
         output_path.parent.mkdir(parents=True, exist_ok=True)
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(output_content)
@@ -77,6 +86,9 @@ def main() -> None:
     last_package_slug = ""
     last_stubs_output_dir = Path()
 
+    version_pkg_template_dir = TEMPLATES_DIR / "version-package"
+    version_pkg_templates = list(version_pkg_template_dir.rglob("*.jinja2"))
+
     for version in args.versions:
         version_digits = "".join(ch for ch in version if ch.isdigit())
         package_slug = f"{stub_pkg_prefix}_eplusV{version_digits}"
@@ -88,11 +100,25 @@ def main() -> None:
             or EnergyPlusVersion(version).current_idd_path
         )
 
-        stubs_output_dir = OUTPUT_DIR / package_slug
+        pkg_root = OUTPUT_DIR / package_slug
+        stubs_output_dir = pkg_root / "src" / package_slug
         stubs_output_dir.mkdir(parents=True, exist_ok=True)
 
         generator = EppyStubGenerator(idd_file, str(stubs_output_dir))
         generator.generate_stubs()
+
+        render_templates(
+            version_pkg_templates,
+            {
+                "package_name": package_slug,
+                "eplus_version": version,
+                "builder_package_name": "mypy_eppy_builder",
+                "builder_version": get_version(),
+                "builder_repo_url": "https://github.com/samuelduchesne/mypy-eppy-builder",
+            },
+            output_base=pkg_root,
+            template_base=version_pkg_template_dir,
+        )
 
         if version == eplus_version:
             last_package_slug = package_slug

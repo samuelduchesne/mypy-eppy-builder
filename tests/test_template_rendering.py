@@ -108,3 +108,16 @@ def test_versioned_idf_overloads() -> None:
     )
     assert "class IDF_23_1(IDF)" in rendered
     assert 'def __init__(self: IDF_23_1, *, as_version: Literal["23.1"]' in rendered
+
+
+def test_version_package_pyproject() -> None:
+    env = _env()
+    template = env.get_template("version-package/pyproject.toml.jinja2")
+    rendered = template.render(
+        package_name="types-eppy-eplusv231",
+        eplus_version="23.1",
+        builder_package_name="builder",
+        builder_version="0.0",
+        builder_repo_url="https://example.com",
+    )
+    assert 'name = "types-eppy-eplusv231"' in rendered
