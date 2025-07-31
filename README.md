@@ -59,12 +59,12 @@ The CI/CD pipeline will be triggered when you open a pull request, merge to main
 ### Generating stub packages
 
 The `generate_package.py` script builds the `eppy-stubs` or
-`archetypal-stubs` packages. Provide the EnergyPlus version and IDD file
-to target:
+`archetypal-stubs` packages. Provide one or more EnergyPlus versions and
+the IDD file to target:
 
 ```bash
 uv run python src/mypy_eppy_builder/generate_package.py \
-    --version 23.1 \
+    --versions 23.1 24.1 \
     --idd-file /path/to/Energy+.idd \
     --package-type eppy
 ```

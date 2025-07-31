@@ -49,9 +49,10 @@ def get_version() -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Generate typing package")
     parser.add_argument(
-        "--version",
-        default="23.1",
-        help="EnergyPlus version (e.g. 23.1)",
+        "--versions",
+        nargs="+",
+        default=["23.1"],
+        help="EnergyPlus versions (e.g. 23.1 24.1)",
     )
     parser.add_argument(
         "--idd-file",
@@ -65,40 +66,51 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    eplus_version = args.version
+    stub_pkg_prefix = f"types_{args.package_type}"
+    extras: list[dict[str, str]] = []
 
-    version_digits = "".join(ch for ch in eplus_version if ch.isdigit())
-    package_slug = f"types_eppy_eplusV{version_digits}"
-    version_slug = f"eplus{eplus_version.replace('.', '_')}"
+    classnames: list[str] = []
+    overloads: list[tuple[str, str]] = []
+    # Keep details for the most recent version
+    eplus_version = args.versions[-1]
     version_classname = f"IDF_{eplus_version.replace('.', '_')}"
-    extras = [{"name": version_slug, "package": package_slug}]
+    last_package_slug = ""
+    last_stubs_output_dir = Path()
 
-    idd_file = args.idd_file or os.environ.get("EPPY_IDD_FILE") or EnergyPlusVersion(eplus_version).current_idd_path
+    for version in args.versions:
+        version_digits = "".join(ch for ch in version if ch.isdigit())
+        package_slug = f"{stub_pkg_prefix}_eplusV{version_digits}"
+        extras.append({"name": f"eplus{version.replace('.', '_')}", "package": package_slug})
+
+        idd_file = (
+            args.idd_file
+            or os.environ.get("EPPY_IDD_FILE")
+            or EnergyPlusVersion(version).current_idd_path
+        )
+
+        stubs_output_dir = OUTPUT_DIR / package_slug
+        stubs_output_dir.mkdir(parents=True, exist_ok=True)
+
+        generator = EppyStubGenerator(idd_file, str(stubs_output_dir))
+        generator.generate_stubs()
+
+        if version == eplus_version:
+            last_package_slug = package_slug
+            last_stubs_output_dir = stubs_output_dir
+            for stub_file in sorted(stubs_output_dir.glob("*.pyi")):
+                classname = stub_file.stem
+                classnames.append(classname)
+                ep_key = classname_to_key(classname)
+                overloads.append((classname, ep_key))
 
     template_dir = TEMPLATES_DIR / f"types-{args.package_type}"
     template_files = list(template_dir.rglob("*.jinja2"))
-
-    # --- 1. Generate Eppy stubs ---
-    stubs_output_dir = OUTPUT_DIR / package_slug
-    stubs_output_dir.mkdir(parents=True, exist_ok=True)
-
-    generator = EppyStubGenerator(idd_file, str(stubs_output_dir))
-    generator.generate_stubs()
-
-    # --- 2. Collect classnames and overloads for template context ---
-    classnames = []
-    overloads = []
-    for stub_file in sorted(stubs_output_dir.glob("*.pyi")):
-        classname = stub_file.stem
-        classnames.append(classname)
-        ep_key = classname_to_key(classname)
-        overloads.append((classname, ep_key))
 
     # --- 3. Prepare context for templates ---
     if args.package_type == "archetypal":
         package_ctx = {
             "epbunch_path": "geomeppy.patches",
-            "package_slug": package_slug,
+            "package_slug": last_package_slug,
             "extras": extras,
             "min_python_version": "3.9",
             "library_name": "archetypal",
@@ -117,13 +129,13 @@ def main() -> None:
             },
             "data": {
                 "pypi_name": "archetypal-stubs",
-                "pypi_stubs_name": package_slug,
+                "pypi_stubs_name": last_package_slug,
             },
         }
     else:
         package_ctx = {
             "epbunch_path": "eppy.modeledditor",
-            "package_slug": package_slug,
+            "package_slug": last_package_slug,
             "extras": extras,
             "min_python_version": "3.9",
             "library_name": "eppy",
@@ -142,7 +154,7 @@ def main() -> None:
             },
             "data": {
                 "pypi_name": "eppy-stubs",
-                "pypi_stubs_name": package_slug,
+                "pypi_stubs_name": last_package_slug,
             },
         }
 
@@ -151,7 +163,7 @@ def main() -> None:
         "builder_repo_url": "https://github.com/samuelduchesne/mypy-eppy-builder",
         "classnames": classnames,
         "overloads": overloads,
-        "stubs_output_dir": str(stubs_output_dir),
+        "stubs_output_dir": str(last_stubs_output_dir),
         "builder_package_name": "mypy_eppy_builder",
         "builder_version": get_version(),
         "eplus_version": eplus_version,
