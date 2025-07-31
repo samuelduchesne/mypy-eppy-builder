@@ -1,6 +1,7 @@
 import argparse
 import os
 from pathlib import Path
+from typing import cast
 
 from jinja2 import Environment, FileSystemLoader
 
@@ -25,7 +26,7 @@ def render_templates(template_files: list[Path], context: dict | None = None) ->
     context = context or {}
     for template_path in template_files:
         template = env.get_template(str(template_path.relative_to(TEMPLATES_DIR)))
-        output_content = template.render(**context)
+        output_content = cast(str, template.render(**context))
         # Remove .jinja2 extension for output
         output_rel_path = str(template_path).replace(".jinja2", "")
         output_path = OUTPUT_DIR / Path(output_rel_path).relative_to(TEMPLATES_DIR)
@@ -35,7 +36,7 @@ def render_templates(template_files: list[Path], context: dict | None = None) ->
         print(f"Generated: {output_path}")
 
 
-def get_version():
+def get_version() -> str:
     import importlib.metadata
 
     try:
@@ -44,7 +45,7 @@ def get_version():
         return "0.0.0"
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Generate typing package")
     parser.add_argument(
         "--version",
