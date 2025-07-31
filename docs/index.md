@@ -6,3 +6,26 @@
 [![License](https://img.shields.io/github/license/samuelduchesne/mypy-eppy-builder)](https://img.shields.io/github/license/samuelduchesne/mypy-eppy-builder)
 
 Automated type stubs for Eppy, enabling static type checking and IDE autocompletion.
+
+## Generating stub packages
+
+Use `generate_package.py` to build stubs for a specific EnergyPlus version. Pass
+the desired version and the path to the corresponding `Energy+.idd` file:
+
+```bash
+uv run python src/mypy_eppy_builder/generate_package.py \
+    --version 23.1 \
+    --idd-file /path/to/Energy+.idd \
+    --package-type eppy
+```
+
+If the `--idd-file` argument is omitted, the script reads the `EPPY_IDD_FILE`
+environment variable or falls back to the default EnergyPlus installation
+location. Use `--package-type archetypal` to generate the
+`archetypal-stubs` package instead of `eppy-stubs`.
+
+## Publishing to PyPI
+
+The CI workflow builds stub packages for each supported EnergyPlus version and
+publishes them to PyPI on release. This automatically uploads
+`eppy-stubs` and `archetypal-stubs` so they can be installed with `pip`.
