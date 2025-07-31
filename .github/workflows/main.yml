@@ -67,3 +67,43 @@ jobs:
 
       - name: Check if documentation can be built
         run: uv run mkdocs build -s
+
+  generate-packages:
+    runs-on: ubuntu-latest
+    needs: [check-docs]
+    strategy:
+      matrix:
+        eplus-version: ["23.1", "24.1"]
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up the environment
+        uses: ./.github/actions/setup-python-env
+
+      - name: Restore IDD cache
+        id: idd-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/energyplus/${{ matrix.eplus-version }}
+          key: idd-${{ matrix.eplus-version }}
+
+      - name: Download IDD file
+        if: steps.idd-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/.cache/energyplus/${{ matrix.eplus-version }}
+          curl -L https://github.com/NREL/EnergyPlus/releases/download/v${{ matrix.eplus-version }}.0/EnergyPlus-${{ matrix.eplus-version }}.0-Linux-Ubuntu22.04-x86_64.tar.gz -o eplus.tar.gz
+          tar --strip-components=1 -xzf eplus.tar.gz "EnergyPlus-${{ matrix.eplus-version }}.0/Energy+.idd" -C ~/.cache/energyplus/${{ matrix.eplus-version }}
+
+      - name: Generate package
+        run: |
+          uv run python src/mypy_eppy_builder/generate_package.py \
+            --version ${{ matrix.eplus-version }} \
+            --idd-file ~/.cache/energyplus/${{ matrix.eplus-version }}/Energy+.idd \
+            --package-type eppy
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-${{ matrix.eplus-version }}
+          path: generated_package
