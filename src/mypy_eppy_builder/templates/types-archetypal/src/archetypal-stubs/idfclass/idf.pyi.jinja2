@@ -1,11 +1,16 @@
-{# idf.pyi.jinja2 #}
-from typing import overload, Literal, Iterable
+from typing import overload, Literal, Iterable, TypedDict
 
 from {{ package.epbunch_path }} import EpBunch
 
 {% for classname in classnames %}
 from {{ package.data.pypi_stubs_name }}.{{ classname }} import {{ classname }}
 {% endfor %}
+
+IDFObjectsDict = TypedDict('IDFObjectsDict', {
+{% for classname, ep_key in overloads %}
+    '{{ ep_key }}': list[{{ classname }}],
+{% endfor %}
+})
 
 class IDF:
 {% if version_classname %}
@@ -19,8 +24,6 @@ class IDF:
     @overload
     def newidfobject(self, key: Literal["{{ ep_key }}"], **kwargs) -> {{ classname }}: ...
     @overload
-    def idfobjects(self, key: Literal["{{ ep_key }}"]) -> list[{{ classname }}]: ...
-    @overload
     def popidfobject(self, key: Literal["{{ ep_key }}"], index: int) -> {{ classname }}: ...
     @overload
     def getobject(self, key: Literal["{{ ep_key }}"], name: str) -> {{ classname }}: ...
@@ -29,7 +32,8 @@ class IDF:
 {% endfor %}
 
     def newidfobject(self, key: str, **kwargs) -> EpBunch: ...
-    def idfobjects(self, key: str) -> list[EpBunch]: ...
+    @property
+    def idfobjects(self) -> IDFObjectsDict: ...
     def popidfobject(self, key: str, index: int) -> EpBunch: ...
     def getobject(self, key: str, name: str) -> EpBunch: ...
     def copyidfobject(self, idfobject: EpBunch) -> EpBunch: ...
