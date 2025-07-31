@@ -1,0 +1,19 @@
+{# idf.pyi.jinja2 #}
+from typing import overload, Literal
+
+from {{ package.epbunch_path }} import EpBunch
+
+{% for classname in classnames %}
+from {{ package.data.pypi_stubs_name }}.{{ classname }} import {{ classname }}
+{% endfor %}
+
+class IDF:
+{% for classname, ep_key in overloads %}
+    @overload
+    def newidfobject(self, key: Literal["{{ ep_key }}"], **kwargs) -> {{ classname }}: ...
+    @overload
+    def idfobjects(self, key: Literal["{{ ep_key }}"]) -> list[{{ classname }}]: ...
+{% endfor %}
+
+    def newidfobject(self, key: str, **kwargs) -> EpBunch: ...
+    def idfobjects(self, key: str) -> list[EpBunch]: ...

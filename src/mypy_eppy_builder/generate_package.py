@@ -10,8 +10,6 @@ from mypy_eppy_builder.eppy_stubs_generator import EppyStubGenerator, classname_
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 OUTPUT_DIR = Path(__file__).parents[2] / "generated_package"
 
-# List of template files to render (relative to TEMPLATES_DIR)
-TEMPLATE_FILES = [path for path in TEMPLATES_DIR.rglob("*.jinja2") if "common" not in path.parts]
 
 # Jinja2 environment
 env = Environment(
@@ -23,9 +21,9 @@ env = Environment(
 )
 
 
-def render_templates(context=None):
+def render_templates(template_files: list[Path], context: dict | None = None) -> None:
     context = context or {}
-    for template_path in TEMPLATE_FILES:
+    for template_path in template_files:
         template = env.get_template(str(template_path.relative_to(TEMPLATES_DIR)))
         output_content = template.render(**context)
         # Remove .jinja2 extension for output
@@ -47,7 +45,7 @@ def get_version():
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate Eppy typing package")
+    parser = argparse.ArgumentParser(description="Generate typing package")
     parser.add_argument(
         "--version",
         default="23.1",
@@ -56,6 +54,12 @@ def main():
     parser.add_argument(
         "--idd-file",
         help="Path to Energy+.idd file to use",
+    )
+    parser.add_argument(
+        "--package-type",
+        choices=["archetypal", "eppy"],
+        default="archetypal",
+        help="Which package templates to render",
     )
     args = parser.parse_args()
 
@@ -69,6 +73,9 @@ def main():
         or os.environ.get("EPPY_IDD_FILE")
         or f"/Applications/EnergyPlus-{eplus_version.replace('.', '-')}/Energy+.idd"
     )
+
+    template_dir = TEMPLATES_DIR / f"types-{args.package_type}"
+    template_files = list(template_dir.rglob("*.jinja2"))
 
     # --- 1. Generate Eppy stubs ---
     stubs_output_dir = OUTPUT_DIR / package_slug
@@ -87,8 +94,8 @@ def main():
         overloads.append((classname, ep_key))
 
     # --- 3. Prepare context for templates ---
-    context = {
-        "package": {
+    if args.package_type == "archetypal":
+        package_ctx = {
             "epbunch_path": "geomeppy.patches",
             "package_slug": package_slug,
             "min_python_version": "3.9",
@@ -110,7 +117,34 @@ def main():
                 "pypi_name": "archetypal-stubs",
                 "pypi_stubs_name": package_slug,
             },
-        },
+        }
+    else:
+        package_ctx = {
+            "epbunch_path": "geomeppy.patches",
+            "package_slug": package_slug,
+            "min_python_version": "3.9",
+            "library_name": "eppy",
+            "library_version": eplus_version,
+            "pypi_name": "types-eppy",
+            "version": "0.1.0",
+            "description": "Eppy type stubs for the eppy package",
+            "setup_package_data": {
+                "types-eppy": ["*.pyi", "*.md"],
+            },
+            "url": {
+                "pypi": "https://pypi.org/project/types-eppy/",
+                "github": "https://github.com/samueld/mypy-eppy-builder",
+                "rtd_badge": "https://img.shields.io/badge/Material_for_MkDocs-526CFE?style=for-the-badge&logo=MaterialForMkDocs&logoColor=white",
+                "docs": "https://types-eppy.readthedocs.io/",
+            },
+            "data": {
+                "pypi_name": "eppy-stubs",
+                "pypi_stubs_name": package_slug,
+            },
+        }
+
+    context = {
+        "package": package_ctx,
         "builder_repo_url": "https://github.com/samuelduchesne/mypy-eppy-builder",
         "classnames": classnames,
         "overloads": overloads,
@@ -118,7 +152,7 @@ def main():
         "builder_package_name": "mypy_eppy_builder",
         "builder_version": get_version(),
     }
-    render_templates(context)
+    render_templates(template_files, context)
 
 
 if __name__ == "__main__":
