@@ -158,12 +158,12 @@ def test_generate_stubs_and_overloads(tmp_path: Path) -> None:
     material_stub = (tmp_path / "Material.pyi").read_text()
 
     assert "class Zone(EpBunch)" in zone_stub
-    assert "Name: str" in zone_stub
-    assert "Multiplier: float = Field(default=1.0)" in zone_stub
+    assert "Name: Annotated[str, Field()]" in zone_stub
+    assert "Multiplier: Annotated[float, Field(default=1.0)]" in zone_stub
 
     assert "class Material(EpBunch)" in material_stub
-    assert "Roughness: Literal['Smooth', 'Rough']" in material_stub
-    assert "Thickness: Annotated[float, Field(gt=0, lt=10)] = Field(gt=0, lt=10, default=0.1)" in material_stub
+    assert "Roughness: Annotated[Literal['Smooth', 'Rough'], Field()]" in material_stub
+    assert "Thickness: Annotated[float, Field(gt=0, lt=10, default=0.1)]" in material_stub
 
     context = {
         "classnames": ["Zone", "Material"],

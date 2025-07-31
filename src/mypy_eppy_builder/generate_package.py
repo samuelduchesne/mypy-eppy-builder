@@ -1,7 +1,6 @@
 import argparse
 import os
 from pathlib import Path
-from typing import cast
 
 from archetypal import EnergyPlusVersion
 from jinja2 import Environment, FileSystemLoader
@@ -13,16 +12,6 @@ TEMPLATES_DIR = Path(__file__).parent / "templates"
 OUTPUT_DIR = Path(__file__).parents[2] / "generated_package"
 
 
-# Jinja2 environment
-env = Environment(
-    loader=FileSystemLoader(TEMPLATES_DIR),
-    trim_blocks=True,
-    lstrip_blocks=True,
-    autoescape=True,
-    keep_trailing_newline=True,
-)
-
-
 def render_templates(
     template_files: list[Path],
     context: dict | None = None,
@@ -31,19 +20,32 @@ def render_templates(
     template_base: Path = TEMPLATES_DIR,
 ) -> None:
     """Render Jinja templates to ``output_base`` preserving relative layout."""
+    # Jinja2 environment
+    env = Environment(
+        loader=FileSystemLoader(template_base),
+        trim_blocks=True,
+        lstrip_blocks=True,
+        autoescape=True,
+        keep_trailing_newline=True,
+    )
+    for root, _, files in os.walk(template_base):
+        rel_path = os.path.relpath(root, template_base)
+        rendered_rel_path = env.from_string(rel_path).render(context)
 
-    context = context or {}
-    for template_path in template_files:
-        template = env.get_template(str(template_path.relative_to(template_base)))
-        output_content = cast(str, template.render(**context))
-        # Remove .jinja2 extension for output
-        rel_path = template_path.relative_to(template_base)
-        output_rel_path = str(rel_path).replace(".jinja2", "")
-        output_path = output_base / output_rel_path
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(output_path, "w", encoding="utf-8") as f:
-            f.write(output_content)
-        print(f"Generated: {output_path}")
+        for file_name in files:
+            # Render file names (remove '.jinja2' extension)
+            rendered_file_name = env.from_string(file_name.replace(".jinja2", "")).render(context)
+
+            # Determine destination path dynamically
+            output_path = Path(output_base) / rendered_rel_path / rendered_file_name
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+
+            # Render and write file content
+            template = env.get_template(str(Path(rel_path) / file_name))
+            rendered_content = template.render(context)
+
+            with open(output_path, "w") as f:
+                f.write(rendered_content)
 
 
 def get_version() -> str:
@@ -91,14 +93,14 @@ def main() -> None:
 
     for version in args.versions:
         version_digits = "".join(ch for ch in version if ch.isdigit())
-        package_slug = f"{stub_pkg_prefix}_eplusV{version_digits}"
-        extras.append({"name": f"eplus{version.replace('.', '_')}", "package": package_slug})
+        package_slug = f"{stub_pkg_prefix}_eplus{version_digits}"
+        extras.append({
+            "name": f"eplus{version.replace('.', '_')}",
+            "package": package_slug,
+            "path": f"../{package_slug}",
+        })
 
-        idd_file = (
-            args.idd_file
-            or os.environ.get("EPPY_IDD_FILE")
-            or EnergyPlusVersion(version).current_idd_path
-        )
+        idd_file = args.idd_file or os.environ.get("EPPY_IDD_FILE") or EnergyPlusVersion(version).current_idd_path
 
         pkg_root = OUTPUT_DIR / package_slug
         stubs_output_dir = pkg_root / "src" / package_slug

@@ -21,6 +21,13 @@ dependencies = []
 {% endfor %}
 {% endif %}
 
+{% if package.extras %}
+[tool.uv.sources]
+{% for extra in package.extras %}
+{{ extra.package }} = { path = "{{ extra.path }}" }
+{% endfor %}
+{% endif %}
+
 [build-system]
 requires = ["uv_build>=0.8.4,<0.9.0"]
 build-backend = "uv_build"
