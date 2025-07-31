@@ -60,10 +60,9 @@ def get_version() -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Generate typing package")
     parser.add_argument(
-        "--versions",
-        nargs="+",
-        default=["23.1"],
-        help="EnergyPlus versions (e.g. 23.1 24.1)",
+        "--version",
+        default="23.1",
+        help="EnergyPlus version (e.g. 23.1)",
     )
     parser.add_argument(
         "--idd-file",
@@ -82,8 +81,7 @@ def main() -> None:
 
     classnames: list[str] = []
     overloads: list[tuple[str, str]] = []
-    # Keep details for the most recent version
-    eplus_version = args.versions[-1]
+    eplus_version = args.version
     version_classname = f"IDF_{eplus_version.replace('.', '_')}"
     last_package_slug = ""
     last_stubs_output_dir = Path()
@@ -91,45 +89,43 @@ def main() -> None:
     version_pkg_template_dir = TEMPLATES_DIR / "version-package"
     version_pkg_templates = list(version_pkg_template_dir.rglob("*.jinja2"))
 
-    for version in args.versions:
-        version_digits = "".join(ch for ch in version if ch.isdigit())
-        package_slug = f"{stub_pkg_prefix}_eplus{version_digits}"
-        extras.append({
-            "name": f"eplus{version.replace('.', '_')}",
-            "package": package_slug,
-            "path": f"../{package_slug}",
-        })
+    version_digits = "".join(ch for ch in eplus_version if ch.isdigit())
+    package_slug = f"{stub_pkg_prefix}_eplus{version_digits}"
+    extras.append({
+        "name": f"eplus{eplus_version.replace('.', '_')}",
+        "package": package_slug,
+        "path": f"../{package_slug}",
+    })
 
-        idd_file = args.idd_file or os.environ.get("EPPY_IDD_FILE") or EnergyPlusVersion(version).current_idd_path
+    idd_file = args.idd_file or os.environ.get("EPPY_IDD_FILE") or EnergyPlusVersion(eplus_version).current_idd_path
 
-        pkg_root = OUTPUT_DIR / package_slug
-        stubs_output_dir = pkg_root / "src" / package_slug
-        stubs_output_dir.mkdir(parents=True, exist_ok=True)
+    pkg_root = OUTPUT_DIR / package_slug
+    stubs_output_dir = pkg_root / "src" / package_slug
+    stubs_output_dir.mkdir(parents=True, exist_ok=True)
 
-        generator = EppyStubGenerator(idd_file, str(stubs_output_dir))
-        generator.generate_stubs()
+    generator = EppyStubGenerator(idd_file, str(stubs_output_dir))
+    generator.generate_stubs()
 
-        render_templates(
-            version_pkg_templates,
-            {
-                "package_name": package_slug,
-                "eplus_version": version,
-                "builder_package_name": "mypy_eppy_builder",
-                "builder_version": get_version(),
-                "builder_repo_url": "https://github.com/samuelduchesne/mypy-eppy-builder",
-            },
-            output_base=pkg_root,
-            template_base=version_pkg_template_dir,
-        )
+    render_templates(
+        version_pkg_templates,
+        {
+            "package_name": package_slug,
+            "eplus_version": eplus_version,
+            "builder_package_name": "mypy_eppy_builder",
+            "builder_version": get_version(),
+            "builder_repo_url": "https://github.com/samuelduchesne/mypy-eppy-builder",
+        },
+        output_base=pkg_root,
+        template_base=version_pkg_template_dir,
+    )
 
-        if version == eplus_version:
-            last_package_slug = package_slug
-            last_stubs_output_dir = stubs_output_dir
-            for stub_file in sorted(stubs_output_dir.glob("*.pyi")):
-                classname = stub_file.stem
-                classnames.append(classname)
-                ep_key = classname_to_key(classname)
-                overloads.append((classname, ep_key))
+    last_package_slug = package_slug
+    last_stubs_output_dir = stubs_output_dir
+    for stub_file in sorted(stubs_output_dir.glob("*.pyi")):
+        classname = stub_file.stem
+        classnames.append(classname)
+        ep_key = classname_to_key(classname)
+        overloads.append((classname, ep_key))
 
     template_dir = TEMPLATES_DIR / f"types-{args.package_type}"
     template_files = list(template_dir.rglob("*.jinja2"))
