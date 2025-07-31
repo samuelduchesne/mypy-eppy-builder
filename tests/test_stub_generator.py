@@ -6,7 +6,9 @@ from pathlib import Path
 
 def _render_class_stub(ctx: dict) -> str:
     lines = [
-        "from typing import Literal",
+        "from typing import Annotated, Literal",
+        "",
+        "from pydantic import Field",
         "",
         "from geomeppy.patches import EpBunch",
         "",
@@ -19,12 +21,9 @@ def _render_class_stub(ctx: dict) -> str:
     if fields:
         for field in fields:
             line = f"    {field['name']}: {field['type']}"
-            default = field.get("default")
-            if default not in (None, "", "none"):
-                val = default
-                if field["type"] == "str" or field["type"].startswith("Literal"):
-                    val = f'"{default}"'
-                line += f" = {val}"
+            field_call = field.get("field_call")
+            if field_call:
+                line += f" = {field_call}"
             lines.append(line)
             note = field.get("note")
             if note:
@@ -102,6 +101,7 @@ class DummyIDF:
                 {"idfobj": "Material", "memo": ["Material object"]},
                 {"field": ["Name"], "type": ["alpha"]},
                 {"field": ["Roughness"], "type": ["choice"], "key": ["Smooth", "Rough"]},
+                {"field": ["Thickness"], "type": ["real"], "default": ["0.1"], "minimum>": ["0"], "maximum<": ["10"]},
             ],
         ]
 
@@ -147,10 +147,11 @@ def test_generate_stubs_and_overloads(tmp_path: Path) -> None:
 
     assert "class Zone(EpBunch)" in zone_stub
     assert "Name: str" in zone_stub
-    assert "Multiplier: float = 1.0" in zone_stub
+    assert "Multiplier: float = Field(default=1.0)" in zone_stub
 
     assert "class Material(EpBunch)" in material_stub
     assert "Roughness: Literal['Smooth', 'Rough']" in material_stub
+    assert "Thickness: Annotated[float, Field(gt=0, lt=10)] = Field(gt=0, lt=10, default=0.1)" in material_stub
 
     overload_path = tmp_path / "idf.pyi"
     generate_overloads(str(tmp_path), str(overload_path))

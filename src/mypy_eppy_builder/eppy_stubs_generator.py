@@ -23,6 +23,28 @@ class EppyStubGenerator:
     def normalize_classname(self, obj_name: str) -> str:
         return re.sub(r"[^a-zA-Z0-9]", "_", obj_name.title())
 
+    def _get_numeric_limits(self, field: dict[str, list[str]]) -> dict[str, str]:
+        """Return pydantic Field constraints from an IDD field definition."""
+        mapping = {
+            "minimum": "ge",
+            "minimum>": "gt",
+            "maximum": "le",
+            "maximum<": "lt",
+        }
+        limits: dict[str, str] = {}
+        for key, arg in mapping.items():
+            val = field.get(key, [""])[0]
+            if val not in (None, ""):
+                limits[arg] = val
+        return limits
+
+    def _format_default(self, base_type: str, value: str) -> str | None:
+        if value in (None, "", "none"):
+            return None
+        if base_type == "str" or base_type.startswith("Literal"):
+            return repr(value)
+        return value
+
     def get_field_type(self, field: dict[str, list[str]]) -> str:
         field_type = field.get("type", ["alpha"])[0]
         if field_type == "real":
@@ -44,14 +66,26 @@ class EppyStubGenerator:
         stub_fields = []
         for field in fields:
             field_name = self.normalize_classname(field["field"][0])
-            field_type = self.get_field_type(field)
+            base_type = self.get_field_type(field)
+            limits = self._get_numeric_limits(field) if base_type in {"int", "float"} else {}
+            annotation_type = base_type
+            field_call = ""
+            if limits:
+                args = ", ".join(f"{k}={v}" for k, v in limits.items())
+                annotation_type = f"Annotated[{base_type}, Field({args})]"
+            default_val = self._format_default(base_type, field.get("default", [""])[0])
+            field_args = []
+            field_args.extend(f"{k}={v}" for k, v in limits.items())
+            if default_val is not None:
+                field_args.append(f"default={default_val}")
+            if field_args:
+                field_call = f"Field({', '.join(field_args)})"
             field_note = field.get("note", [""])[0]
-            field_default = field.get("default", [""])[0]
             stub_fields.append({
                 "name": field_name,
-                "type": field_type,
+                "type": annotation_type,
                 "note": field_note,
-                "default": field_default,
+                "field_call": field_call,
             })
         template = self.env.get_template("common/class_stub.pyi.jinja2")
         return template.render(
