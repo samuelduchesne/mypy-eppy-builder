@@ -4,6 +4,7 @@ from pathlib import Path
 
 # Helper functions to emulate Jinja2 templates
 
+
 def _render_class_stub(ctx: dict) -> str:
     lines = [
         "from typing import Annotated, Literal",
@@ -53,13 +54,9 @@ def _render_idf_template(ctx: dict) -> str:
     ver = ctx.get("eplus_version")
     if version_cls and ver:
         lines.append("    @overload")
-        lines.append(
-            f"    def __init__(self: {version_cls}, *, as_version: Literal['{ver}'], **kwargs) -> None: ..."
-        )
+        lines.append(f"    def __init__(self: {version_cls}, *, as_version: Literal['{ver}'], **kwargs) -> None: ...")
         lines.append("    @overload")
-        lines.append(
-            f"    def __init__(self: {version_cls}, *, file_version: Literal['{ver}'], **kwargs) -> None: ..."
-        )
+        lines.append(f"    def __init__(self: {version_cls}, *, file_version: Literal['{ver}'], **kwargs) -> None: ...")
     lines.append("    def __init__(self, *args, **kwargs) -> None: ...")
     for overload in ctx.get("overloads", []):
         lines.append("")
@@ -151,7 +148,6 @@ def teardown_module(module) -> None:
 def test_generate_stubs_and_overloads(tmp_path: Path) -> None:
     from mypy_eppy_builder.eppy_stubs_generator import (
         EppyStubGenerator,
-        generate_overloads,
     )
 
     generator = EppyStubGenerator("dummy.idd", str(tmp_path))
@@ -180,4 +176,4 @@ def test_generate_stubs_and_overloads(tmp_path: Path) -> None:
     }
     overload_content = _render_idf_template(context)
     assert "def newidfobject(self, key: Literal['ZONE'], **kwargs) -> Zone" in overload_content
-    assert 'class IDF_23_1(IDF)' in overload_content
+    assert "class IDF_23_1(IDF)" in overload_content
