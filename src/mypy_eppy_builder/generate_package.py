@@ -1,3 +1,4 @@
+import argparse
 import os
 from pathlib import Path
 
@@ -46,10 +47,31 @@ def get_version():
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Generate Eppy typing package")
+    parser.add_argument(
+        "--version",
+        default="23.1",
+        help="EnergyPlus version (e.g. 23.1)",
+    )
+    parser.add_argument(
+        "--idd-file",
+        help="Path to Energy+.idd file to use",
+    )
+    args = parser.parse_args()
+
+    eplus_version = args.version
+
+    version_digits = "".join(ch for ch in eplus_version if ch.isdigit())
+    package_slug = f"types_eppy_eplusV{version_digits}"
+
+    idd_file = (
+        args.idd_file
+        or os.environ.get("EPPY_IDD_FILE")
+        or f"/Applications/EnergyPlus-{eplus_version.replace('.', '-')}/Energy+.idd"
+    )
+
     # --- 1. Generate Eppy stubs ---
-    # These could be parameterized or loaded from config/CLI
-    idd_file = os.environ.get("EPPY_IDD_FILE") or "/Applications/EnergyPlus-23-1-0/Energy+.idd"
-    stubs_output_dir = OUTPUT_DIR / "types_eppy_eplusV231"
+    stubs_output_dir = OUTPUT_DIR / package_slug
     stubs_output_dir.mkdir(parents=True, exist_ok=True)
 
     generator = EppyStubGenerator(idd_file, str(stubs_output_dir))
@@ -68,9 +90,10 @@ def main():
     context = {
         "package": {
             "epbunch_path": "geomeppy.patches",
-            "package_slug": "types_eppy_eplusV231",
+            "package_slug": package_slug,
             "min_python_version": "3.9",
             "library_name": "archetypal",
+            "library_version": eplus_version,
             "pypi_name": "types-archetypal",
             "version": "0.1.0",
             "description": "Eppy type stubs for the archetypal package",
@@ -85,7 +108,7 @@ def main():
             },
             "data": {
                 "pypi_name": "archetypal-stubs",
-                "pypi_stubs_name": "types_eppy_eplusV231",
+                "pypi_stubs_name": package_slug,
             },
         },
         "builder_repo_url": "https://github.com/samuelduchesne/mypy-eppy-builder",
