@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 from typing import cast
 
+from archetypal import EnergyPlusVersion
 from jinja2 import Environment, FileSystemLoader
 
 from mypy_eppy_builder.eppy_stubs_generator import EppyStubGenerator, classname_to_key
@@ -72,11 +73,7 @@ def main() -> None:
     version_classname = f"IDF_{eplus_version.replace('.', '_')}"
     extras = [{"name": version_slug, "package": package_slug}]
 
-    idd_file = (
-        args.idd_file
-        or os.environ.get("EPPY_IDD_FILE")
-        or f"/Applications/EnergyPlus-{eplus_version.replace('.', '-')}/Energy+.idd"
-    )
+    idd_file = args.idd_file or os.environ.get("EPPY_IDD_FILE") or EnergyPlusVersion(eplus_version).current_idd_path
 
     template_dir = TEMPLATES_DIR / f"types-{args.package_type}"
     template_files = list(template_dir.rglob("*.jinja2"))
@@ -125,7 +122,7 @@ def main() -> None:
         }
     else:
         package_ctx = {
-            "epbunch_path": "geomeppy.patches",
+            "epbunch_path": "eppy.modeledditor",
             "package_slug": package_slug,
             "extras": extras,
             "min_python_version": "3.9",
