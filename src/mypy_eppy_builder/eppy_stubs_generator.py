@@ -40,7 +40,7 @@ class EppyStubGenerator:
         return limits
 
     def _format_default(self, base_type: str, value: str) -> str | None:
-        if value in (None, "", "none"):
+        if value in (None, "", "none", "NONE", "None"):
             return None
         if base_type == "str" or base_type.startswith("Literal"):
             return repr(value)
@@ -69,24 +69,20 @@ class EppyStubGenerator:
             field_name = self.normalize_classname(field["field"][0])
             base_type = self.get_field_type(field)
             limits = self._get_numeric_limits(field) if base_type in {"int", "float"} else {}
-            annotation_type = base_type
-            field_call = ""
-            if limits:
-                args = ", ".join(f"{k}={v}" for k, v in limits.items())
-                annotation_type = f"Annotated[{base_type}, Field({args})]"
-            default_val = self._format_default(base_type, field.get("default", [""])[0])
             field_args = []
+            default_val = self._format_default(base_type, field.get("default", [""])[0])
             field_args.extend(f"{k}={v}" for k, v in limits.items())
+            # If 'required-field' is present, always add a default (even if None)
+            require_field = "required-field" in field
             if default_val is not None:
                 field_args.append(f"default={default_val}")
-            if field_args:
-                field_call = f"Field({', '.join(field_args)})"
+            elif require_field:
+                field_args.insert(0, "default=...")
             field_note = field.get("note", [""])[0]
             stub_fields.append({
                 "name": field_name,
-                "type": annotation_type,
+                "type": f"Annotated[{base_type}, Field({', '.join(field_args)})]",
                 "note": field_note,
-                "field_call": field_call,
             })
         template = self.env.get_template("common/class_stub.pyi.jinja2")
         return cast(

@@ -44,10 +44,10 @@ def test_pyproject_extras(tmp_path: Path) -> None:
             "version": "0.1.0",
             "description": "desc",
             "library_name": "archetypal",
-            "extras": [{"name": "eplus23_1", "package": "types_archetypal_eplusV231"}],
+            "extras": [{"name": "eplus23_1", "package": "types_archetypal_eplus231"}],
         }
     )
-    assert 'eplus23_1 = ["types_archetypal_eplusV231"]' in rendered
+    assert 'eplus23_1 = ["types_archetypal_eplus231"]' in rendered
 
 
 def _env() -> Environment:
@@ -64,7 +64,7 @@ def _env() -> Environment:
 def test_modeleditor_template() -> None:
     env = _env()
     template = env.get_template(
-        "common/modeleditor.pyi.jinja2",
+        "types-eppy/src/eppy-stubs/eppy/modeleditor.pyi.jinja2",
     )
     rendered = template.render(
         package={"epbunch_path": "geomeppy.patches", "data": {"pypi_stubs_name": "pkg"}},
@@ -97,7 +97,7 @@ def test_archetypal_idf_extra_methods() -> None:
 def test_versioned_idf_overloads() -> None:
     env = _env()
     template = env.get_template(
-        "types-eppy/src/eppy-stubs/idfclass/idf.pyi.jinja2",
+        "types-archetypal/src/archetypal-stubs/idfclass/idf.pyi.jinja2",
     )
     rendered = template.render(
         package={"epbunch_path": "geomeppy.patches", "data": {"pypi_stubs_name": "pkg"}},
@@ -108,3 +108,16 @@ def test_versioned_idf_overloads() -> None:
     )
     assert "class IDF_23_1(IDF)" in rendered
     assert 'def __init__(self: IDF_23_1, *, as_version: Literal["23.1"]' in rendered
+
+
+def test_version_package_pyproject() -> None:
+    env = _env()
+    template = env.get_template("version-package/pyproject.toml.jinja2")
+    rendered = template.render(
+        package_name="types-eppy-eplusv231",
+        eplus_version="23.1",
+        builder_package_name="builder",
+        builder_version="0.0",
+        builder_repo_url="https://example.com",
+    )
+    assert 'name = "types-eppy-eplusv231"' in rendered

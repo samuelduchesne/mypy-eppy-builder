@@ -14,15 +14,18 @@ stub as `Field(default=..., ge=..., le=...)` alongside the annotation.
 
 ## Generating stub packages
 
-Use `generate_package.py` to build stubs for a specific EnergyPlus version. Pass
-the desired version and the path to the corresponding `Energy+.idd` file:
+Use `generate_package.py` to build stubs for one or more EnergyPlus versions. Pass
+the desired versions and the path to the corresponding `Energy+.idd` file:
 
 ```bash
 uv run python src/mypy_eppy_builder/generate_package.py \
-    --version 23.1 \
+    --versions 23.1 24.1 \
     --idd-file /path/to/Energy+.idd \
     --package-type eppy
 ```
+
+A directory `generated_package/` will contain separate stub packages for each
+specified EnergyPlus version.
 
 If the `--idd-file` argument is omitted, the script reads the `EPPY_IDD_FILE`
 environment variable or falls back to the default EnergyPlus installation
