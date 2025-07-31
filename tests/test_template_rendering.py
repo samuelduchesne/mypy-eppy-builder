@@ -1,5 +1,10 @@
 from pathlib import Path
-from jinja2 import Environment, FileSystemLoader
+
+import pytest
+
+jinja2 = pytest.importorskip("jinja2")
+Environment = jinja2.Environment
+FileSystemLoader = jinja2.FileSystemLoader
 
 
 def test_pyproject_keywords(tmp_path: Path) -> None:
