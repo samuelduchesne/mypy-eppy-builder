@@ -1,6 +1,7 @@
 import os
 import re
 from pathlib import Path
+from typing import cast
 
 from archetypal.idfclass import IDF
 from jinja2 import Environment, FileSystemLoader
@@ -54,13 +55,13 @@ class EppyStubGenerator:
                 "default": field_default,
             })
         template = self.env.get_template("common/class_stub.pyi.jinja2")
-        return template.render(
+        return cast(str, template.render(
             classname=classname,
             class_memo=class_memo,
             fields=stub_fields,
-        )
+        ))
 
-    def generate_stubs(self):
+    def generate_stubs(self) -> None:
         os.makedirs(self.output_dir, exist_ok=True)
         idd_info: list[list[dict]] = self.idf.idd_info
 
@@ -77,10 +78,10 @@ def classname_to_key(classname: str) -> str:
     return ":".join(part.upper() for part in parts)
 
 
-def generate_overloads(stubs_dir: str, output_file: str, template_dir: str = TEMPLATE_DIR):
+def generate_overloads(stubs_dir: str, output_file: str, template_dir: Path = TEMPLATE_DIR) -> None:
     env = Environment(
         autoescape=True,
-        loader=FileSystemLoader(template_dir),
+        loader=FileSystemLoader(str(template_dir)),
         trim_blocks=True,
         lstrip_blocks=True,
     )
@@ -91,7 +92,7 @@ def generate_overloads(stubs_dir: str, output_file: str, template_dir: str = TEM
             classnames.append(classname)
     overloads = [{"classname": classname, "key": classname_to_key(classname)} for classname in classnames]
     template = env.get_template("common/idf.pyi.jinja2")
-    rendered = template.render(classnames=classnames, overloads=overloads)
+    rendered = cast(str, template.render(classnames=classnames, overloads=overloads))
     Path(output_file).parent.mkdir(parents=True, exist_ok=True)
     with open(output_file, "w") as f:
         f.write(rendered)

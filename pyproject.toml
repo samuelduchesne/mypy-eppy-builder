@@ -62,6 +62,10 @@ show_error_codes = true
 module = ["archetypal", "archetypal.*"]
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = ["jinja2", "jinja2.*"]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
