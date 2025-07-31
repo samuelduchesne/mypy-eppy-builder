@@ -96,7 +96,7 @@ class EppyStubGenerator:
 
     def generate_stubs(self) -> None:
         os.makedirs(self.output_dir, exist_ok=True)
-        idd_info: list[list[dict]] = self.idf.idd_info
+        idd_info: list[list[dict]] = self.idf.idd_info  # type: ignore[var-annotated]
 
         for obj, *fields in idd_info[1:]:
             stub_content = self.render_class_stub(obj, fields)
