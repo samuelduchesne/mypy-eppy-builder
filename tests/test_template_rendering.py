@@ -1,22 +1,10 @@
 from pathlib import Path
-try:
-    from jinja2 import Environment, FileSystemLoader
-except ModuleNotFoundError:  # pragma: no cover - fallback for offline tests
-    class DummyTemplate:
-        def render(self, **kwargs):
-            return 'keywords = ["archetypal", "typing", "stubs"]'
 
-    class Environment:
-        def __init__(self, *args, **kwargs) -> None:
-            pass
+import pytest
 
-        def get_template(self, name: str) -> DummyTemplate:  # noqa: D401
-            return DummyTemplate()
-
-    class FileSystemLoader:
-        def __init__(self, *args, **kwargs) -> None:
-            pass
-
+jinja2 = pytest.importorskip("jinja2")
+Environment = jinja2.Environment
+FileSystemLoader = jinja2.FileSystemLoader
 
 def test_pyproject_keywords(tmp_path: Path) -> None:
     templates_dir = Path("src/mypy_eppy_builder/templates")
