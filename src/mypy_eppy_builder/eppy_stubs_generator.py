@@ -89,11 +89,14 @@ class EppyStubGenerator:
                 "field_call": field_call,
             })
         template = self.env.get_template("common/class_stub.pyi.jinja2")
-        return cast(str, template.render(
-            classname=classname,
-            class_memo=class_memo,
-            fields=stub_fields,
-        ))
+        return cast(
+            str,
+            template.render(
+                classname=classname,
+                class_memo=class_memo,
+                fields=stub_fields,
+            ),
+        )
 
     def generate_stubs(self) -> None:
         os.makedirs(self.output_dir, exist_ok=True)

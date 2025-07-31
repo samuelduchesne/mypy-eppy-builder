@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 from typing import cast
 
+from archetypal import EnergyPlusVersion
 from jinja2 import Environment, FileSystemLoader
 
 from mypy_eppy_builder.eppy_stubs_generator import EppyStubGenerator, classname_to_key
@@ -68,12 +69,11 @@ def main() -> None:
 
     version_digits = "".join(ch for ch in eplus_version if ch.isdigit())
     package_slug = f"types_eppy_eplusV{version_digits}"
+    version_slug = f"eplus{eplus_version.replace('.', '_')}"
+    version_classname = f"IDF_{eplus_version.replace('.', '_')}"
+    extras = [{"name": version_slug, "package": package_slug}]
 
-    idd_file = (
-        args.idd_file
-        or os.environ.get("EPPY_IDD_FILE")
-        or f"/Applications/EnergyPlus-{eplus_version.replace('.', '-')}/Energy+.idd"
-    )
+    idd_file = args.idd_file or os.environ.get("EPPY_IDD_FILE") or EnergyPlusVersion(eplus_version).current_idd_path
 
     template_dir = TEMPLATES_DIR / f"types-{args.package_type}"
     template_files = list(template_dir.rglob("*.jinja2"))
@@ -99,6 +99,7 @@ def main() -> None:
         package_ctx = {
             "epbunch_path": "geomeppy.patches",
             "package_slug": package_slug,
+            "extras": extras,
             "min_python_version": "3.9",
             "library_name": "archetypal",
             "library_version": eplus_version,
@@ -121,8 +122,9 @@ def main() -> None:
         }
     else:
         package_ctx = {
-            "epbunch_path": "geomeppy.patches",
+            "epbunch_path": "eppy.modeledditor",
             "package_slug": package_slug,
+            "extras": extras,
             "min_python_version": "3.9",
             "library_name": "eppy",
             "library_version": eplus_version,
@@ -152,6 +154,8 @@ def main() -> None:
         "stubs_output_dir": str(stubs_output_dir),
         "builder_package_name": "mypy_eppy_builder",
         "builder_version": get_version(),
+        "eplus_version": eplus_version,
+        "version_classname": version_classname,
     }
     render_templates(template_files, context)
 

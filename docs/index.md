@@ -29,6 +29,15 @@ environment variable or falls back to the default EnergyPlus installation
 location. Use `--package-type archetypal` to generate the
 `archetypal-stubs` package instead of `eppy-stubs`.
 
+Pre-built distributions expose extras for each EnergyPlus version. Install the
+matching stub like so:
+
+```bash
+pip install "archetypal-stubs[eplus23_1]"
+```
+
+Make sure the extra corresponds to the EnergyPlus version of your IDF files.
+
 ## Publishing to PyPI
 
 The CI workflow builds stub packages for each supported EnergyPlus version and

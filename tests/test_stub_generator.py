@@ -4,6 +4,7 @@ from pathlib import Path
 
 # Helper functions to emulate Jinja2 templates
 
+
 def _render_class_stub(ctx: dict) -> str:
     lines = [
         "from typing import Annotated, Literal",
@@ -49,16 +50,28 @@ def _render_idf_template(ctx: dict) -> str:
     lines.append("})")
     lines.append("")
     lines.append("class IDF:")
+    version_cls = ctx.get("version_classname")
+    ver = ctx.get("eplus_version")
+    if version_cls and ver:
+        lines.append("    @overload")
+        lines.append(f"    def __init__(self: {version_cls}, *, as_version: Literal['{ver}'], **kwargs) -> None: ...")
+        lines.append("    @overload")
+        lines.append(f"    def __init__(self: {version_cls}, *, file_version: Literal['{ver}'], **kwargs) -> None: ...")
+    lines.append("    def __init__(self, *args, **kwargs) -> None: ...")
     for overload in ctx.get("overloads", []):
         lines.append("")
         lines.append("    @overload")
         lines.append(
-            f"    def newidfobject(self, key: Literal[\"{overload['key']}\"], **kwargs) -> {overload['classname']}: ..."
+            f"    def newidfobject(self, key: Literal['{overload['key']}'], **kwargs) -> {overload['classname']}: ..."
         )
     lines.append("")
     lines.append("    def newidfobject(self, key: str, **kwargs) -> EpBunch: ...")
     lines.append("    @property")
     lines.append("    def idfobjects(self) -> IDFObjectsDict: ...")
+    if version_cls:
+        lines.append("")
+        lines.append(f"class {version_cls}(IDF):")
+        lines.append("    pass")
     return "\n".join(lines)
 
 
@@ -135,7 +148,6 @@ def teardown_module(module) -> None:
 def test_generate_stubs_and_overloads(tmp_path: Path) -> None:
     from mypy_eppy_builder.eppy_stubs_generator import (
         EppyStubGenerator,
-        generate_overloads,
     )
 
     generator = EppyStubGenerator("dummy.idd", str(tmp_path))
@@ -153,8 +165,15 @@ def test_generate_stubs_and_overloads(tmp_path: Path) -> None:
     assert "Roughness: Literal['Smooth', 'Rough']" in material_stub
     assert "Thickness: Annotated[float, Field(gt=0, lt=10)] = Field(gt=0, lt=10, default=0.1)" in material_stub
 
-    overload_path = tmp_path / "idf.pyi"
-    generate_overloads(str(tmp_path), str(overload_path))
-    overload_content = overload_path.read_text()
-    assert 'def newidfobject(self, key: Literal["ZONE"], **kwargs) -> Zone' in overload_content
-    assert 'def newidfobject(self, key: Literal["MATERIAL"], **kwargs) -> Material' in overload_content
+    context = {
+        "classnames": ["Zone", "Material"],
+        "overloads": [
+            {"classname": "Zone", "key": "ZONE"},
+            {"classname": "Material", "key": "MATERIAL"},
+        ],
+        "version_classname": "IDF_23_1",
+        "eplus_version": "23.1",
+    }
+    overload_content = _render_idf_template(context)
+    assert "def newidfobject(self, key: Literal['ZONE'], **kwargs) -> Zone" in overload_content
+    assert "class IDF_23_1(IDF)" in overload_content
