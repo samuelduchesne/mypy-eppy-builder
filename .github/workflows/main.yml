@@ -73,8 +73,12 @@ jobs:
     needs: [check-docs]
     strategy:
       matrix:
-        eplus-version: ["23.1", "24.1"]
         package-type: ["eppy", "archetypal"]
+        energyplus-version: ["23.1.0"]
+        include:
+          - energyplus-version: 23.1.0
+            energyplus-sha: 87ed9199d4
+            energyplus-install: 23-1-0
     steps:
       - name: Check out
         uses: actions/checkout@v4
@@ -82,30 +86,26 @@ jobs:
       - name: Set up the environment
         uses: ./.github/actions/setup-python-env
 
-      - name: Restore IDD cache
-        id: idd-cache
-        uses: actions/cache@v4
+      - name: Install EnergyPlus
+        uses: Elementa-Engineering/install-energyplus@v1
         with:
-          path: ~/.cache/energyplus/${{ matrix.eplus-version }}
-          key: idd-${{ matrix.eplus-version }}
-
-      - name: Download IDD file
-        if: steps.idd-cache.outputs.cache-hit != 'true'
-        run: |
-          mkdir -p ~/.cache/energyplus/${{ matrix.eplus-version }}
-          curl -L https://github.com/NREL/EnergyPlus/releases/download/v${{ matrix.eplus-version }}.0/EnergyPlus-${{ matrix.eplus-version }}.0-Linux-Ubuntu22.04-x86_64.tar.gz -o eplus.tar.gz
-          tar --strip-components=1 -xzf eplus.tar.gz "EnergyPlus-${{ matrix.eplus-version }}.0/Energy+.idd" -C ~/.cache/energyplus/${{ matrix.eplus-version }}
+          energyplus-version: ${{ matrix.energyplus-version }}
+          energyplus-sha: ${{ matrix.energyplus-sha }}
+          energyplus-install: ${{ matrix.energyplus-install }}
 
       - name: Generate package
         run: |
           uv run python src/mypy_eppy_builder/generate_package.py \
-            --version ${{ matrix.eplus-version }} \
-            --idd-file ~/.cache/energyplus/${{ matrix.eplus-version }}/Energy+.idd \
-            --package-type {{ matrix.package-type }}
+            --version ${{ matrix.energyplus-version }} \
+            --idd-file /usr/local/EnergyPlus-${{ matrix.energyplus-install }}/Energy+.idd \
+            --package-type ${{ matrix.package-type }}
 
       - name: Build package
-        working-directory: generated_package
+        working-directory: generated_package/types-${{ matrix.package-type }}
         run: uv build
 
       - name: Publish package to PyPI
+        working-directory: generated_package/types-${{ matrix.package-type }}
         run: uv publish
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
