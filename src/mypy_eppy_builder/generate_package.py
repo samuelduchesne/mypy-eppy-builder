@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import os
 from pathlib import Path
@@ -28,24 +30,23 @@ def render_templates(
         autoescape=True,
         keep_trailing_newline=True,
     )
-    for root, _, files in os.walk(template_base):
-        rel_path = os.path.relpath(root, template_base)
-        rendered_rel_path = env.from_string(rel_path).render(context)
+    for template_file in template_files:
+        # Compute relative path and destination
+        rel_template_path = template_file.relative_to(template_base)
+        rendered_rel_path = env.from_string(str(rel_template_path.parent)).render(context)
 
-        for file_name in files:
-            # Render file names (remove '.jinja2' extension)
-            rendered_file_name = env.from_string(file_name.replace(".jinja2", "")).render(context)
+        # Render file name (remove '.jinja2' extension)
+        rendered_file_name = env.from_string(template_file.name.replace(".jinja2", "")).render(context)
 
-            # Determine destination path dynamically
-            output_path = Path(output_base) / rendered_rel_path / rendered_file_name
-            output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path = Path(output_base) / rendered_rel_path / rendered_file_name
+        output_path.parent.mkdir(parents=True, exist_ok=True)
 
-            # Render and write file content
-            template = env.get_template(str(Path(rel_path) / file_name))
-            rendered_content = template.render(context)
+        # Render and write file content
+        template = env.get_template(str(rel_template_path))
+        rendered_content = template.render(context)
 
-            with open(output_path, "w") as f:
-                f.write(rendered_content)
+        with open(output_path, "w") as f:
+            f.write(rendered_content)
 
 
 def get_version() -> str:

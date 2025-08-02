@@ -2,7 +2,7 @@ import os
 import re
 from pathlib import Path
 from string import ascii_letters, digits
-from typing import cast
+from typing import Optional, cast
 
 from archetypal.idfclass import IDF
 from jinja2 import Environment, FileSystemLoader
@@ -56,7 +56,7 @@ class EppyStubGenerator:
                 limits[arg] = val
         return limits
 
-    def _format_default(self, base_type: str, value: str) -> str | None:
+    def _format_default(self, base_type: str, value: str) -> Optional[str]:
         if value in (None, "", "none", "NONE", "None"):
             return None
         if base_type == "str" or base_type.startswith("Literal"):
