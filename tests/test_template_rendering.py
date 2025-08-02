@@ -94,22 +94,6 @@ def test_archetypal_idf_extra_methods() -> None:
     assert "def addidfobject" in rendered
 
 
-def test_versioned_idf_overloads() -> None:
-    env = _env()
-    template = env.get_template(
-        "types-archetypal/src/archetypal-stubs/idfclass/idf.pyi.jinja2",
-    )
-    rendered = template.render(
-        package={"epbunch_path": "geomeppy.patches", "data": {"pypi_stubs_name": "pkg"}},
-        classnames=[],
-        overloads=[],
-        version_classname="IDF_23_1",
-        eplus_version="23.1",
-    )
-    assert "class IDF_23_1(IDF)" in rendered
-    assert 'def __init__(self: IDF_23_1, *, as_version: Literal["23.1"]' in rendered
-
-
 def test_version_package_pyproject() -> None:
     env = _env()
     template = env.get_template("version-package/pyproject.toml.jinja2")

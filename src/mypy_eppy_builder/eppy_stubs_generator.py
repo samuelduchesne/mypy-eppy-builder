@@ -1,6 +1,7 @@
 import os
 import re
 from pathlib import Path
+from string import ascii_letters, digits
 from typing import cast
 
 from archetypal.idfclass import IDF
@@ -23,6 +24,22 @@ class EppyStubGenerator:
 
     def normalize_classname(self, obj_name: str) -> str:
         return re.sub(r"[^a-zA-Z0-9]", "_", obj_name.title())
+
+    def normalize_field_name(self, field_name: str) -> str:
+        """Normalize field names using same process as `eppy`."""
+
+        def onlylegalchar(name):
+            """return only legal chars"""
+            legalchar = ascii_letters + digits + " "
+            return "".join([s for s in name[:] if s in legalchar])
+
+        def makefieldname(namefromidd):
+            """made a field name that can be used by bunch"""
+            newname = onlylegalchar(namefromidd)
+            bunchname = newname.replace(" ", "_")
+            return bunchname
+
+        return makefieldname(field_name)
 
     def _get_numeric_limits(self, field: dict[str, list[str]]) -> dict[str, str]:
         """Return pydantic Field constraints from an IDD field definition."""
@@ -66,7 +83,7 @@ class EppyStubGenerator:
         class_memo = obj.get("memo", [""])[0]
         stub_fields = []
         for field in fields:
-            field_name = self.normalize_classname(field["field"][0])
+            field_name = self.normalize_field_name(field["field"][0])
             base_type = self.get_field_type(field)
             limits = self._get_numeric_limits(field) if base_type in {"int", "float"} else {}
             field_args = []
@@ -96,7 +113,7 @@ class EppyStubGenerator:
 
     def generate_stubs(self) -> None:
         os.makedirs(self.output_dir, exist_ok=True)
-        idd_info: list[list[dict]] = self.idf.idd_info
+        idd_info: list[list[dict]] = self.idf.idd_info  # type: ignore[var-annotated]
 
         for obj, *fields in idd_info[1:]:
             stub_content = self.render_class_stub(obj, fields)

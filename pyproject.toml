@@ -18,7 +18,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-    "archetypal>=2.18.8",
+    "archetypal>=2.18.9",
     "jinja2>=3.1.6",
 ]
 
@@ -33,7 +33,6 @@ dev = [
     "pre-commit>=2.20.0",
     "tox-uv>=1.11.3",
     "deptry>=0.23.0",
-    "mypy>=0.991",
     "pytest-cov>=4.0.0",
     "ruff>=0.11.5",
     "mkdocs>=1.4.2",
@@ -69,6 +68,12 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.pyright]
+include = ["src"]
+reportMissingImports = "error"
+reportMissingTypeStubs = false
+pythonVersion = "3.12"
 
 [tool.ruff]
 target-version = "py39"
