@@ -76,7 +76,6 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    stub_pkg_prefix = f"types_{args.package_type}"
     extras: list[dict[str, str]] = []
 
     classnames: list[str] = []
@@ -90,16 +89,17 @@ def main() -> None:
     version_pkg_templates = list(version_pkg_template_dir.rglob("*.jinja2"))
 
     version_digits = "".join(ch for ch in eplus_version if ch.isdigit())
-    package_slug = f"{stub_pkg_prefix}_eplus{version_digits}"
+    package_name = f"types-eplus{version_digits}"
+    package_slug = f"types_eplus{version_digits}"
     extras.append({
-        "name": f"eplus{eplus_version.replace('.', '_')}",
-        "package": package_slug,
-        "path": f"../{package_slug}",
+        "name": f"eplus{eplus_version.replace('.', '')}",
+        "package": package_name,
+        "path": f"../{package_name}",
     })
 
     idd_file = args.idd_file or os.environ.get("EPPY_IDD_FILE") or EnergyPlusVersion(eplus_version).current_idd_path
 
-    pkg_root = OUTPUT_DIR / package_slug
+    pkg_root = OUTPUT_DIR / package_name
     stubs_output_dir = pkg_root / "src" / package_slug
     stubs_output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -133,7 +133,7 @@ def main() -> None:
     # --- 3. Prepare context for templates ---
     if args.package_type == "archetypal":
         package_ctx = {
-            "epbunch_path": "geomeppy.patches",
+            "epbunch_path": "eppy.bunch_subclass",
             "package_slug": last_package_slug,
             "extras": extras,
             "min_python_version": "3.9",
@@ -158,7 +158,7 @@ def main() -> None:
         }
     else:
         package_ctx = {
-            "epbunch_path": "eppy.modeledditor",
+            "epbunch_path": "eppy.bunch_subclass",
             "package_slug": last_package_slug,
             "extras": extras,
             "min_python_version": "3.9",
