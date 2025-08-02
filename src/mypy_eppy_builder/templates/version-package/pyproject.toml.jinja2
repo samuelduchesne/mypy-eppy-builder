@@ -13,3 +13,17 @@ dependencies = []
 [build-system]
 requires = ["uv_build>=0.8.4,<0.9.0"]
 build-backend = "uv_build"
+
+[tool.ruff]
+target-version = "py39"
+line-length = 120
+fix = true
+
+[tool.ruff.lint]
+select = [
+    "YTT", "S", "B", "A", "C4", "T10", "SIM", "I", "C90", "E", "W", "F", "PGH", "UP", "RUF", "TRY",
+]
+ignore = ["E501", "E731"]
+
+[tool.ruff.format]
+preview = true

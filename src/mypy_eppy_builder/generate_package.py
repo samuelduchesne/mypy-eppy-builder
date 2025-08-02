@@ -196,6 +196,17 @@ def main() -> None:
     }
     render_templates(template_files, context)
 
+    # Lint/fix the generated packages (requires ruff installed)
+    try:
+        import subprocess
+
+        # Apply auto-fixes, but do not error on remaining violations
+        subprocess.run(["ruff", "check", str(pkg_root), "--fix-only"], check=True)  # noqa: S603, S607
+        wrapper_dir = OUTPUT_DIR / package_ctx["pypi_name"]
+        subprocess.run(["ruff", "check", str(wrapper_dir), "--fix-only"], check=True)  # noqa: S603, S607
+    except FileNotFoundError:
+        print("Warning: ruff not found; skipping lint on generated packages.")
+
 
 if __name__ == "__main__":
     main()
