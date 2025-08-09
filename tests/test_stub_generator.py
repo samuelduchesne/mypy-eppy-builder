@@ -49,7 +49,11 @@ def _render_idf_template(ctx: dict) -> str:
         lines.append(f"    '{overload['key']}': list[{overload['classname']}],")
     lines.append("})")
     lines.append("")
-    lines.append("class IDF:")
+    base_cls = ctx.get("base_class")
+    if base_cls:
+        lines.append(f"class IDF({base_cls}):")
+    else:
+        lines.append("class IDF:")
     version_cls = ctx.get("version_classname")
     ver = ctx.get("eplus_version")
     if version_cls and ver:

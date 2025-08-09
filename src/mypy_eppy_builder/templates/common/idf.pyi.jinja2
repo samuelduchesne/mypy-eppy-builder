@@ -12,7 +12,7 @@ IDFObjectsDict = TypedDict('IDFObjectsDict', {
 {% endfor %}
 })
 
-class IDF:
+class IDF{% if base_class %}({{ base_class }}){% endif %}:
 {% for classname, ep_key in overloads %}
     @overload
     def newidfobject(self, key: Literal["{{ ep_key }}"], **kwargs) -> {{ classname }}: ...
