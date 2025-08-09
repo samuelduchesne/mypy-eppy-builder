@@ -91,6 +91,8 @@ def test_archetypal_idf_extra_methods() -> None:
         classnames=["Zone"],
         overloads=[("Zone", "ZONE")],
     )
+    assert "from geomeppy import IDF as GeomIDF" in rendered
+    assert "class IDF(GeomIDF):" in rendered
     assert "def addidfobject" in rendered
 
 
