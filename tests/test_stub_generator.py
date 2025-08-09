@@ -177,3 +177,16 @@ def test_generate_stubs_and_overloads(tmp_path: Path) -> None:
     overload_content = _render_idf_template(context)
     assert "def newidfobject(self, key: Literal['ZONE'], **kwargs) -> Zone" in overload_content
     assert "class IDF_23_1(IDF)" in overload_content
+
+
+def test_normalize_classname_preserves_camel_case() -> None:
+    from mypy_eppy_builder.eppy_stubs_generator import (
+        EppyStubGenerator,
+        classname_to_key,
+    )
+
+    generator = EppyStubGenerator("dummy.idd", "out")
+
+    name = "BuildingSurface:Detailed"
+    assert generator.normalize_classname(name) == "BuildingSurface_Detailed"
+    assert classname_to_key("BuildingSurface_Detailed") == "BUILDINGSURFACE:DETAILED"
