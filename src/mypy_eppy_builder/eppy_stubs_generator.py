@@ -23,7 +23,22 @@ class EppyStubGenerator:
         )
 
     def normalize_classname(self, obj_name: str) -> str:
-        return re.sub(r"[^a-zA-Z0-9]", "_", obj_name.title())
+        """Return a valid Python class name for an IDD object.
+
+        EnergyPlus object names can contain characters such as spaces or
+        colons (e.g. ``BuildingSurface:Detailed``).  The original
+        implementation applied :py:meth:`str.title` which lower-cased
+        characters following an existing capital, producing names like
+        ``Buildingsurface_Detailed``.  That behaviour broke the expected
+        camel-casing of many IDD objects.
+
+        This version simply replaces any non alpha-numeric character with an
+        underscore while preserving the original casing of the remaining
+        characters so the example above becomes
+        ``BuildingSurface_Detailed``.
+        """
+
+        return re.sub(r"[^0-9a-zA-Z]+", "_", obj_name.strip())
 
     def normalize_field_name(self, field_name: str) -> str:
         """Normalize field names using same process as `eppy`."""
