@@ -89,7 +89,7 @@ jobs:
       - name: Set up the environment
         uses: ./.github/actions/setup-python-env
         with:
-          - uv-version: "0.8.8"
+          uv-version: "0.8.8"
 
       - name: Bump package version
         if: github.ref == 'refs/heads/main' && github.event_name == 'push' && matrix.package-type == 'eppy'
