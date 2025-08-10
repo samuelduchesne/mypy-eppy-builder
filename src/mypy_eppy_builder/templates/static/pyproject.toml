@@ -1,0 +1,23 @@
+[build-system]
+requires = ["hatchling>=1.25", "hatch-vcs>=0.4"]
+build-backend = "hatchling.build"
+
+[project]
+name = "eppy-stubs"
+dynamic = ["version"]
+description = "PEP 561 stub-only package for eppy; version tracks EnergyPlus (MAJOR.MINOR.PATCH)"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = ["Typing :: Stubs Only", "Programming Language :: Python :: 3"]
+dependencies = []
+
+[tool.hatch.version]
+source = "vcs"
+tag-pattern = "^v(?P<version>\\d+\\.\\d+\\.\\d+)$"
+
+[tool.hatch.build.targets.wheel]
+packages = [{ include = "eppy" }]
+only-include = ["eppy"]
+
+[tool.hatch.build]
+artifacts = ["generated_by.json"]
