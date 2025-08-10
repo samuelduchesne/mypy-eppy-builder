@@ -7,6 +7,9 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
 
+permissions:
+  contents: write
+
 jobs:
   quality:
     runs-on: ubuntu-latest
@@ -85,6 +88,20 @@ jobs:
 
       - name: Set up the environment
         uses: ./.github/actions/setup-python-env
+        with:
+          uv-version: "0.8.8"
+
+      - name: Bump package version
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && matrix.package-type == 'eppy'
+        run: uv version --bump
+
+      - name: Commit version bump
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push' && matrix.package-type == 'eppy'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "chore: bump version" || echo "No changes to commit"
+          git push
 
       - name: Install EnergyPlus
         uses: Elementa-Engineering/install-energyplus@v1
@@ -99,6 +116,29 @@ jobs:
             --version ${{ matrix.energyplus-version }} \
             --idd-file /usr/local/EnergyPlus-${{ matrix.energyplus-install }}/Energy+.idd \
             --package-type ${{ matrix.package-type }}
+
+      - name: Set package version from PyPI
+        working-directory: generated_package/types-${{ matrix.package-type }}
+        run: |
+          PKG_NAME=$(python - <<'PY'
+          import tomllib
+          print(tomllib.load(open('pyproject.toml', 'rb'))['project']['name'])
+          PY
+          )
+          NEXT_VERSION=$(python - "$PKG_NAME" <<'PY'
+          import json, urllib.request, sys
+          pkg = sys.argv[1]
+          try:
+              with urllib.request.urlopen(f"https://pypi.org/pypi/{pkg}/json") as resp:
+                  ver = json.load(resp)["info"]["version"]
+                  parts = ver.split(".")
+                  next_version = f"{parts[0]}.{parts[1]}.{int(parts[2]) + 1}"
+          except Exception:
+              next_version = "0.1.0"
+          print(next_version)
+          PY
+          )
+          uv version "$NEXT_VERSION"
 
       - name: Build package
         working-directory: generated_package/types-${{ matrix.package-type }}
