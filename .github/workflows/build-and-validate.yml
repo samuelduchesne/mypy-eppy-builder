@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        energyplus-version: ["23.1.0", "24.1.0"]
+        eplus-version: ["23.1", "24.1"]
         include:
           - energyplus-version: 23.1.0
             energyplus-sha: 87ed9199d4
@@ -47,7 +47,7 @@ jobs:
       - name: Build both stub packages (internal CLI)
         run: |
           # Generate both archetypal-stubs and eppy-stubs via unified CLI for MAJ.MIN version
-          MAJ_MIN='${{ matrix.energyplus-version }}'
+          MAJ_MIN='${{ matrix.eplus-version }}'
           PATCH=0
           uv run eplus-stubs-build --eplus-version "$MAJ_MIN" --patch "$PATCH"
           ls -R generated_package | head -120 || true
@@ -55,7 +55,7 @@ jobs:
       - name: Build wheels
         run: |
           for PKG in eppy-stubs archetypal-stubs; do \
-            DIR=generated_package/${PKG}-${{ matrix.energyplus-version }}.0; \
+            DIR=generated_package/${PKG}-${{ matrix.eplus-version }}.0; \
             echo "Building $PKG from $DIR"; \
             uv build --directory "$DIR"; \
           done
@@ -68,7 +68,7 @@ jobs:
       - name: Validate eppy-stubs (mypy strict import smoke)
         run: |
           # Pick one of the built wheels to install and test.
-          WHEEL=$(ls generated_package/eppy-stubs-${{ matrix.energyplus-version }}.0/dist/eppy_stubs-*.whl | head -1)
+          WHEEL=$(ls generated_package/eppy-stubs-${{ matrix.eplus-version }}.0/dist/eppy_stubs-*.whl | head -1)
           uv pip install "$WHEEL"
           # Dynamic test module to ensure import exists & types reveal.
           printf '%s\n' 'from eppy import modeleditor' 'reveal_type(modeleditor)' > sample_validate.py
@@ -77,8 +77,8 @@ jobs:
       - name: Upload artifact (both wheels)
         uses: actions/upload-artifact@v4
         with:
-          name: stubs-${{ matrix.energyplus-version }}
+          name: stubs-${{ matrix.eplus-version }}
           path: |
-            generated_package/eppy-stubs-${{ matrix.energyplus-version }}.0/dist/*.whl
-            generated_package/archetypal-stubs-${{ matrix.energyplus-version }}.0/dist/*.whl
+            generated_package/eppy-stubs-${{ matrix.eplus-version }}.0/dist/*.whl
+            generated_package/archetypal-stubs-${{ matrix.eplus-version }}.0/dist/*.whl
           if-no-files-found: error
