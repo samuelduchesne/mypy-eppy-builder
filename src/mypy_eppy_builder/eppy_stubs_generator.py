@@ -4,7 +4,6 @@ from pathlib import Path
 from string import ascii_letters, digits
 from typing import Optional, cast
 
-from archetypal.idfclass import IDF
 from jinja2 import Environment, FileSystemLoader
 
 TEMPLATE_DIR = Path(__file__).parent / "templates"
@@ -12,10 +11,31 @@ TEMPLATE_DIR = Path(__file__).parent / "templates"
 
 # --- Utility to parse IDD definitions and generate stubs ---
 class EppyStubGenerator:
-    def __init__(self, idd_path: str, output_dir: str, template_dir: str = str(TEMPLATE_DIR)):
+    def __init__(
+        self, idd_path: str, output_dir: str, template_dir: str = str(TEMPLATE_DIR), idf_cls: type | None = None
+    ):
+        """Create generator.
+
+        Parameters
+        ----------
+        idd_path: str
+            Path to IDD file (currently unused, retained for future parsing logic).
+        output_dir: str
+            Directory where .pyi stubs are written.
+        template_dir: str
+            Directory containing Jinja2 templates.
+        idf_cls: optional type
+            Optional custom IDF class (primarily for testing). If omitted the
+            archetypal.idfclass.IDF is imported lazily here to avoid binding it
+            before tests can monkeypatch a stub implementation.
+        """
         self.idd_path = idd_path
         self.output_dir = output_dir
-        self.idf = IDF()
+        if idf_cls is None:  # Lazy import to allow test stubbing
+            from archetypal.idfclass import IDF as _IDF  # type: ignore[import-not-found]
+
+            idf_cls = _IDF
+        self.idf = idf_cls()
         self.env = Environment(  # noqa: S701
             loader=FileSystemLoader(template_dir),
             trim_blocks=False,
@@ -95,7 +115,13 @@ class EppyStubGenerator:
 
     def render_class_stub(self, obj: dict, fields: list[dict[str, list[str]]]) -> str:
         classname = self.normalize_classname(obj["idfobj"])
-        class_memo = obj.get("memo", [""])[0]
+
+        def _sanitize_doc(text: str) -> str:
+            # Escape triple quotes and backslashes to keep docstring valid
+            return text.replace("\\", "\\\\").replace('"""', '\\"\\"\\"')
+
+        raw_memo = obj.get("memo", [""])[0]
+        class_memo = _sanitize_doc(raw_memo)
         stub_fields = []
         for field in fields:
             field_name = self.normalize_field_name(field["field"][0])
@@ -110,7 +136,7 @@ class EppyStubGenerator:
                 field_args.append(f"default={default_val}")
             elif require_field:
                 field_args.insert(0, "default=...")
-            field_note = field.get("note", [""])[0]
+            field_note = _sanitize_doc(field.get("note", [""])[0])
             stub_fields.append({
                 "name": field_name,
                 "type": f"Annotated[{base_type}, Field({', '.join(field_args)})]",
@@ -139,28 +165,12 @@ class EppyStubGenerator:
 
 
 def classname_to_key(classname: str) -> str:
-    parts = classname.split("_")
+    """Convert a normalized class name to an EnergyPlus key form.
+
+    Retained for backwards compatibility (used by new CLI).
+    """
+    parts = [p for p in classname.split("_") if p]
     return ":".join(part.upper() for part in parts)
-
-
-def generate_overloads(stubs_dir: str, output_file: str, template_dir: Path = TEMPLATE_DIR) -> None:
-    env = Environment(
-        autoescape=True,
-        loader=FileSystemLoader(str(template_dir)),
-        trim_blocks=True,
-        lstrip_blocks=True,
-    )
-    classnames = []
-    for file in os.listdir(stubs_dir):
-        if file.endswith(".pyi"):
-            classname = file[:-4]
-            classnames.append(classname)
-    overloads = [{"classname": classname, "key": classname_to_key(classname)} for classname in classnames]
-    template = env.get_template("common/idf.pyi.jinja2")
-    rendered = cast(str, template.render(classnames=classnames, overloads=overloads))
-    Path(output_file).parent.mkdir(parents=True, exist_ok=True)
-    with open(output_file, "w") as f:
-        f.write(rendered)
 
 
 # --- Main usage example ---
@@ -171,4 +181,4 @@ if __name__ == "__main__":
 
     generator = EppyStubGenerator(idd_file, stubs_output_dir)
     generator.generate_stubs()
-    # generate_overloads(stubs_output_dir, "./typings/archetypal/idfclass/idf.pyi")
+    # Legacy manual invocation retained for reference; new workflow uses cli.py

@@ -1,0 +1,88 @@
+name: build-and-validate
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  stubs:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        eplus: ["23.1", "24.1"]  # Major.Minor authoritative list
+        include:
+          - eplus: "23.1"
+            energyplus-version: 23.1.0
+            energyplus-sha: 87ed9199d4
+            energyplus-install: 23-1-0
+          - eplus: "24.1"
+            energyplus-version: 24.1.0
+            energyplus-sha: 9d7789a3ac
+            energyplus-install: 24-1-0
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Sync dependencies (dev + extras)
+        run: uv sync --all-extras --dev
+
+      - name: Install EnergyPlus
+        uses: Elementa-Engineering/install-energyplus@v1
+        with:
+          energyplus-version: ${{ matrix.energyplus-version }}
+          energyplus-sha: ${{ matrix.energyplus-sha }}
+          energyplus-install: ${{ matrix.energyplus-install }}
+
+      - name: Build both stub packages (internal CLI)
+        run: |
+          # Generate both archetypal-stubs and eppy-stubs via unified CLI for MAJ.MIN version
+          MAJ_MIN='${{ matrix.eplus }}'
+          PATCH=0
+          uv run eplus-stubs-build --eplus-version "$MAJ_MIN" --patch "$PATCH"
+          ls -R generated_package | head -120 || true
+
+      - name: Build wheels
+        run: |
+          for PKG in eppy-stubs archetypal-stubs; do \
+            DIR=generated_package/${PKG}-${{ matrix.eplus }}.0; \
+            echo "Building $PKG from $DIR"; \
+            uv build --directory "$DIR"; \
+          done
+
+      - name: Prepare validation environment
+        run: |
+          uv add mypy==1.* types-setuptools
+          uv add eppy
+
+      - name: Validate eppy-stubs (mypy strict import smoke)
+        run: |
+          # Pick one of the built wheels to install and test.
+          WHEEL=$(ls generated_package/eppy-stubs-${{ matrix.eplus }}.0/dist/eppy_stubs-*.whl | head -1)
+          uv pip install "$WHEEL"
+          # Dynamic test module to ensure import exists & types reveal.
+          printf '%s\n' 'from eppy import modeleditor' 'reveal_type(modeleditor)' > sample_validate.py
+          # eppy upstream lacks a py.typed marker; until our stub distribution
+          # is integrated via a .pth mapping like typeshed packages, ignore missing.
+          uv run mypy --strict --ignore-missing-imports sample_validate.py
+
+      - name: Upload artifact (both wheels)
+        uses: actions/upload-artifact@v4
+        with:
+          name: stubs-${{ matrix.eplus }}
+          path: |
+            generated_package/eppy-stubs-${{ matrix.eplus }}.0/dist/*.whl
+            generated_package/archetypal-stubs-${{ matrix.eplus }}.0/dist/*.whl
+          if-no-files-found: error

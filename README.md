@@ -56,34 +56,44 @@ git push origin main
 You are now ready to start development on your project!
 The CI/CD pipeline will be triggered when you open a pull request, merge to main, or when you create a new release.
 
-### Generating stub packages
+### Generating stub packages (simplified)
 
-The `generate_package.py` script builds the `eppy-stubs` or
-`archetypal-stubs` packages. Provide a single EnergyPlus version and
-the IDD file to target:
+Use the consolidated CLI `eplus-stubs-build` (installed with this project) to
+generate both `eppy-stubs` and `archetypal-stubs` for a given EnergyPlus
+major.minor version. The IDF object classes are generated once and shared.
 
-```bash
-uv run python src/mypy_eppy_builder/generate_package.py \
-    --version 23.1 \
-    --idd-file /path/to/Energy+.idd \
-    --package-type eppy
+```
+uv run eplus-stubs-build --eplus-version 23.1 --idd-file /path/to/Energy+.idd --patch 0
 ```
 
-The stub package is created under `generated_package/`.
+Artifacts are written to `generated_package/`:
 
-If `--idd-file` is omitted, the script uses the `EPPY_IDD_FILE`
-environment variable or searches the default EnergyPlus location. Use
-`--package-type archetypal` to generate the corresponding archetypal
-stubs.
+- `generated_package/shared/<version>/objects/` holds the shared `.pyi` object stubs.
+- `generated_package/eppy-stubs-<version.patch>/` contains the eppy wrapper.
+- `generated_package/archetypal-stubs-<version.patch>/` contains the archetypal wrapper.
 
-For pre-built packages from PyPI install the wrapper with an extra matching
-your EnergyPlus version, for example:
+The `<patch>` number lets you release tooling/stub fixes without changing the
+underlying EnergyPlus major.minor version. If `--idd-file` is omitted the
+builder tries to auto-detect using `archetypal.EnergyPlusVersion`.
 
-```bash
-pip install "archetypal-stubs[eplus23_1]"
+Makefile helper:
+
+```
+make build-stubs EPLUS=23.1 IDD=/path/to/Energy+.idd PATCH=0
 ```
 
-Ensure the stub version matches the EnergyPlus files you work with.
+#### Installing from PyPI
+
+Packages are versioned as `X.Y.Z` where `X.Y` is the EnergyPlus version and `Z`
+is the patch increment.
+
+```
+pip install "eppy-stubs==23.1.*"
+pip install "archetypal-stubs==23.1.*"
+```
+
+The previous `generate_package.py` workflow is deprecated and will be removed
+in a future release.
 
 To finalize the set-up for publishing to PyPI, see [here](https://fpgmaas.github.io/cookiecutter-uv/features/publishing/#set-up-for-pypi).
 For activating the automatic documentation with MkDocs, see [here](https://fpgmaas.github.io/cookiecutter-uv/features/mkdocs/#enabling-the-documentation-on-github).
