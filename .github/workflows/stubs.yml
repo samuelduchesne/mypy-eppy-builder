@@ -1,0 +1,48 @@
+name: stubs
+
+on:
+  push:
+  pull_request:
+  release:
+    types: [published]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        eplus: ["23.1", "24.1"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v1
+      - run: uv sync --dev
+      - run: uv run python -m mypy_eppy_builder.generate --energyplus-version ${{ matrix.eplus }} --idd-path .cache/${{ matrix.eplus }}/Energy+.idd --out-dir pkg
+      - run: uv add eppy
+      - run: uv run mypy --strict samples/demo.py
+      - run: uv run stubtest eppy --allowlist tests/stubtest-allowlist.txt --concise
+      - run: (cd pkg && uv build)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheel-${{ matrix.eplus }}
+          path: pkg/dist/*.whl
+
+  publish:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v1
+      - run: uv sync --dev
+      - name: Generate stubs
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          MINOR=${VERSION%.*}
+          uv run python -m mypy_eppy_builder.generate --energyplus-version ${MINOR} --idd-path .cache/${MINOR}/Energy+.idd --out-dir pkg
+      - run: (cd pkg && uv build)
+      - run: uv publish --token ${{ secrets.PYPI_API_TOKEN }}

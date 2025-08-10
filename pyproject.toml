@@ -1,134 +1,35 @@
-[project]
-name = "mypy-eppy-builder"
-version = "0.0.1"
-description = "Automated type stubs for Eppy, enabling static type checking and IDE autocompletion."
-authors = [{ name = "Samuel Letellier-Duchesne", email = "samuelduchesne@me.com" }]
-readme = "README.md"
-keywords = ['python']
-requires-python = ">=3.9,<4.0"
-classifiers = [
-    "Intended Audience :: Developers",
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-    "Topic :: Software Development :: Libraries :: Python Modules",
-]
-dependencies = [
-    "archetypal>=2.18.9",
-    "jinja2>=3.1.6",
-]
+[build-system]
+requires = ["hatchling>=1.25", "hatch-vcs>=0.4"]
+build-backend = "hatchling.build"
 
-[project.urls]
-Homepage = "https://samuelduchesne.github.io/mypy-eppy-builder/"
-Repository = "https://github.com/samuelduchesne/mypy-eppy-builder"
-Documentation = "https://samuelduchesne.github.io/mypy-eppy-builder/"
+[project]
+name = "eppy-stubs"
+dynamic = ["version"]
+description = "PEP 561 stub-only package for eppy; version tracks EnergyPlus (MAJOR.MINOR.PATCH)"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+  "Typing :: Stubs Only",
+  "Programming Language :: Python :: 3",
+]
+dependencies = []
+
+[tool.hatch.version]
+source = "vcs"
+tag-pattern = "^v(?P<version>\\d+\\.\\d+\\.\\d+)$"
+
+[tool.hatch.build.targets.wheel]
+packages = ["eppy"]
+only-include = ["eppy", "README.md", "generated_by.json"]
+
+[tool.hatch.build]
+artifacts = ["generated_by.json"]
 
 [dependency-groups]
 dev = [
-    "pytest>=7.2.0",
-    "pre-commit>=2.20.0",
-    "tox-uv>=1.11.3",
-    "deptry>=0.23.0",
-    "pytest-cov>=4.0.0",
-    "ruff>=0.11.5",
-    "mkdocs>=1.4.2",
-    "mkdocs-material>=8.5.10",
-    "mkdocstrings[python]>=0.26.1",
-    "pyright>=1.1.403",
+  "jinja2>=3.1.6",
+  "pytest>=7.2.0",
+  "mypy>=1.10.0",
+  "hatchling>=1.25",
+  "hatch-vcs>=0.4",
 ]
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/mypy_eppy_builder"]
-
-[tool.mypy]
-files = ["src"]
-disallow_untyped_defs = true
-disallow_any_unimported = true
-no_implicit_optional = true
-check_untyped_defs = true
-warn_return_any = true
-warn_unused_ignores = true
-show_error_codes = true
-
-[[tool.mypy.overrides]]
-module = ["archetypal", "archetypal.*"]
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = ["jinja2", "jinja2.*"]
-ignore_missing_imports = true
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-
-[tool.pyright]
-include = ["src"]
-reportMissingImports = "error"
-reportMissingTypeStubs = false
-pythonVersion = "3.12"
-
-[tool.ruff]
-target-version = "py39"
-line-length = 120
-fix = true
-
-[tool.ruff.lint]
-select = [
-    # flake8-2020
-    "YTT",
-    # flake8-bandit
-    "S",
-    # flake8-bugbear
-    "B",
-    # flake8-builtins
-    "A",
-    # flake8-comprehensions
-    "C4",
-    # flake8-debugger
-    "T10",
-    # flake8-simplify
-    "SIM",
-    # isort
-    "I",
-    # mccabe
-    "C90",
-    # pycodestyle
-    "E", "W",
-    # pyflakes
-    "F",
-    # pygrep-hooks
-    "PGH",
-    # pyupgrade
-    "UP",
-    # ruff
-    "RUF",
-    # tryceratops
-    "TRY",
-]
-ignore = [
-    # LineTooLong
-    "E501",
-    # DoNotAssignLambda
-    "E731",
-]
-
-[tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S101"]
-
-[tool.ruff.format]
-preview = true
-
-[tool.coverage.report]
-skip_empty = true
-
-[tool.coverage.run]
-branch = true
-source = ["src"]
