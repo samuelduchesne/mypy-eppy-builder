@@ -75,9 +75,9 @@ def test_generate_shared_and_packages(tmp_path: Path, monkeypatch) -> None:
 
     pkg_dir = write_package("eppy", "23.1", 0, manifest.classnames, shared_dir)
     assert (pkg_dir / "pyproject.toml").is_file()
-    idf_file = pkg_dir / "src" / "eppy_stubs" / "idf.pyi"
+    idf_file = pkg_dir / "src" / "eppy" / "idf.pyi"
     assert "class IDF:" in idf_file.read_text()
-    py_typed = (pkg_dir / "src" / "eppy_stubs" / "py.typed").read_text().strip()
+    py_typed = (pkg_dir / "src" / "eppy" / "py.typed").read_text().strip()
     assert py_typed == "partial"
     # second package
     pkg_dir2 = write_package("archetypal", "23.1", 1, manifest.classnames, shared_dir)

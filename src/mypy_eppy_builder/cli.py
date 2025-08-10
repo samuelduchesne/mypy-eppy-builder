@@ -86,7 +86,7 @@ def write_package(
         raise ValueError
     version = f"{eplus_version}.{patch}"
     pkg_name = f"{package_type}-stubs"
-    pkg_slug = pkg_name.replace("-", "_")
+    pkg_slug = package_type
     pkg_root = PACKAGES_ROOT / f"{pkg_name}-{version}"
     src_root = pkg_root / "src" / pkg_slug
     objects_dest = src_root / "objects"
