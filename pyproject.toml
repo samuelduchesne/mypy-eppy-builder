@@ -22,6 +22,10 @@ dependencies = [
     "jinja2>=3.1.6",
 ]
 
+[project.scripts]
+# New consolidated CLI for simplified two-package build process
+eplus-stubs-build = "mypy_eppy_builder.cli:main"
+
 [project.urls]
 Homepage = "https://samuelduchesne.github.io/mypy-eppy-builder/"
 Repository = "https://github.com/samuelduchesne/mypy-eppy-builder"
@@ -39,6 +43,7 @@ dev = [
     "mkdocs-material>=8.5.10",
     "mkdocstrings[python]>=0.26.1",
     "pyright>=1.1.403",
+    "mypy>=1.10.0",
 ]
 
 [build-system]

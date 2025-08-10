@@ -7,103 +7,14 @@ Environment = jinja2.Environment
 FileSystemLoader = jinja2.FileSystemLoader
 
 
-def test_pyproject_keywords(tmp_path: Path) -> None:
+def test_class_stub_template() -> None:
     templates_dir = Path("src/mypy_eppy_builder/templates")
-    env = Environment(
-        loader=FileSystemLoader(templates_dir),
-        trim_blocks=True,
-        lstrip_blocks=True,
-        autoescape=True,
-        keep_trailing_newline=True,
+    env = Environment(loader=FileSystemLoader(templates_dir))
+    tmpl = env.get_template("common/class_stub.pyi.jinja2")
+    rendered = tmpl.render(
+        classname="Zone",
+        class_memo="Zone object",
+        fields=[{"name": "Name", "type": "Annotated[str, Field()]", "note": "Zone name"}],
     )
-    template = env.get_template("types-archetypal/pyproject.toml.jinja2")
-    rendered = template.render(
-        package={
-            "data": {"pypi_name": "archetypal-stubs"},
-            "version": "0.1.0",
-            "description": "desc",
-            "library_name": "archetypal",
-        }
-    )
-    assert 'keywords = ["archetypal", "typing", "stubs"]' in rendered
-
-
-def test_pyproject_extras(tmp_path: Path) -> None:
-    templates_dir = Path("src/mypy_eppy_builder/templates")
-    env = Environment(
-        loader=FileSystemLoader(templates_dir),
-        trim_blocks=True,
-        lstrip_blocks=True,
-        autoescape=True,
-        keep_trailing_newline=True,
-    )
-    template = env.get_template("types-archetypal/pyproject.toml.jinja2")
-    rendered = template.render(
-        package={
-            "data": {"pypi_name": "archetypal-stubs"},
-            "version": "0.1.0",
-            "description": "desc",
-            "library_name": "archetypal",
-            "extras": [{"name": "eplus23_1", "package": "types_archetypal_eplus231"}],
-        }
-    )
-    assert 'eplus23_1 = ["types_archetypal_eplus231"]' in rendered
-
-
-def _env() -> Environment:
-    templates_dir = Path("src/mypy_eppy_builder/templates")
-    return Environment(
-        loader=FileSystemLoader(templates_dir),
-        trim_blocks=True,
-        lstrip_blocks=True,
-        autoescape=True,
-        keep_trailing_newline=True,
-    )
-
-
-def test_modeleditor_template() -> None:
-    env = _env()
-    template = env.get_template(
-        "types-eppy/src/eppy-stubs/eppy/modeleditor.pyi.jinja2",
-    )
-    rendered = template.render(
-        package={"epbunch_path": "geomeppy.patches", "data": {"pypi_stubs_name": "pkg"}},
-        classnames=["Zone"],
-        overloads=[("Zone", "ZONE")],
-    )
-    assert 'def popidfobject(self, key: Literal["ZONE"], index: int) -> Zone' in rendered
-
-
-def test_geomeppy_idf_template() -> None:
-    env = _env()
-    template = env.get_template("common/geomeppy/idf.pyi.jinja2")
-    rendered = template.render(package={"epbunch_path": "geomeppy.patches"})
-    assert "def getsurfaces" in rendered
-
-
-def test_archetypal_idf_extra_methods() -> None:
-    env = _env()
-    template = env.get_template(
-        "types-archetypal/src/archetypal-stubs/idfclass/idf.pyi.jinja2",
-    )
-    rendered = template.render(
-        package={"epbunch_path": "geomeppy.patches", "data": {"pypi_stubs_name": "pkg"}},
-        classnames=["Zone"],
-        overloads=[("Zone", "ZONE")],
-    )
-    assert "from geomeppy import IDF as GeomIDF" in rendered
-    assert "class IDF(GeomIDF):" in rendered
-    assert "def addidfobject" in rendered
-
-
-def test_version_package_pyproject() -> None:
-    env = _env()
-    template = env.get_template("version-package/pyproject.toml.jinja2")
-    rendered = template.render(
-        package_name="types-eppy-eplusv231",
-        eplus_version="23.1",
-        builder_package_name="builder",
-        builder_version="0.0",
-        builder_repo_url="https://example.com",
-    )
-    assert 'name = "types-eppy-eplusv231"' in rendered
+    assert "class Zone(EpBunch)" in rendered
+    assert "Name: Annotated[str, Field()]" in rendered

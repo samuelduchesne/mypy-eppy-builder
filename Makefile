@@ -25,6 +25,17 @@ build: clean-build ## Build wheel file
 	@echo "🚀 Creating wheel file"
 	@uvx --from build pyproject-build --installer uv
 
+.PHONY: build-stubs
+build-stubs: ## Build both stub packages for an EnergyPlus version. Usage: make build-stubs EPLUS=23.1 [PATCH=0] [IDD=/path/to/Energy+.idd]
+	@echo "🚀 Building stub packages for EnergyPlus $(EPLUS) (patch $${PATCH:-0})"
+	@[ -n "$(EPLUS)" ] || (echo "EPLUS variable required, e.g. make build-stubs EPLUS=23.1" && exit 1)
+	@uv run eplus-stubs-build --eplus-version $(EPLUS) $$( [ -n "$(IDD)" ] && echo "--idd-file $(IDD)" ) --patch $${PATCH:-0}
+
+.PHONY: clean-shared
+clean-shared: ## Remove generated shared stub objects and packages
+	@echo "🚀 Removing generated_package directory"
+	@uv run python -c "import shutil, pathlib; d=pathlib.Path('generated_package'); shutil.rmtree(d) if d.exists() else None"
+
 .PHONY: clean-build
 clean-build: ## Clean build artifacts
 	@echo "🚀 Removing build artifacts"
