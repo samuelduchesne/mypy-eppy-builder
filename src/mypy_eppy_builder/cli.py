@@ -126,7 +126,7 @@ def write_package(
     (src_root / "py.typed").write_text("partial\n")
 
     # Minimal pyproject
-    pyproject = f"""[project]\nname = \"{pkg_name}\"\nversion = \"{version}\"\ndescription = \"EnergyPlus {eplus_version} type stubs for {package_type}\"\nrequires-python = \">=3.9,<4.0\"\nclassifiers = [\n    'Typing :: Stubs',\n    'Programming Language :: Python :: 3',\n]\n[build-system]\nrequires = ['hatchling']\nbuild-backend = 'hatchling.build'\n[tool.hatch.build.targets.wheel]\npackages = ['src/{pkg_slug}']\n"""
+    pyproject = f"""[project]\nname = \"{pkg_name}\"\nversion = \"{version}\"\ndescription = \"EnergyPlus {eplus_version} type stubs for {package_type}\"\nrequires-python = \">=3.9,<4.0\"\nclassifiers = [\n    'Typing :: Stubs Only',\n    'Programming Language :: Python :: 3',\n]\n[build-system]\nrequires = ['hatchling']\nbuild-backend = 'hatchling.build'\n[tool.hatch.build.targets.wheel]\npackages = ['src/{pkg_slug}']\n"""
     (pkg_root / "pyproject.toml").write_text(pyproject)
     (pkg_root / "README.md").write_text(
         f"# {pkg_name}\n\nGenerated stubs for EnergyPlus {eplus_version}. Shared IDF objects set.\n"
